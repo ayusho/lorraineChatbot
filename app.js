@@ -207,9 +207,9 @@ function itemAsAttachment(item) {
         .title(item.name)
         .subtitle('COLOUR : %s', item.color)
         .images([new builder.CardImage().url(item.image)]);
-    // .button([
-    //     builder.CardAction.imBack(session, "wehjbfkfkjadsgfakjsnfjs", "Select")
-    // ]);
+    .button([
+           builder.CardAction.imBack(session, "Selected", "Select")
+     ]);
 }
 // // Add help dialog
 // bot.dialog('help', function (session) {
