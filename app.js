@@ -206,8 +206,8 @@ function itemAsAttachment(item) {
     return new builder.HeroCard()
         .title(item.name)
         .subtitle('COLOUR : %s', item.color)
-        .images([new builder.CardImage().url(item.image)]);
-    .button([
+        .images([new builder.CardImage().url(item.image)])
+        .button([
            builder.CardAction.imBack(session, "Selected", "Select")
      ]);
 }
