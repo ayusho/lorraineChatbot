@@ -206,10 +206,10 @@ function itemAsAttachment(item) {
     return new builder.HeroCard()
         .title(item.name)
         .subtitle('COLOUR : %s', item.color)
-        .images([new builder.CardImage().url(item.image)])
-        .button([
-           builder.CardAction.imBack(session, "Selected", "Select")
-     ]);
+        .images([new builder.CardImage().url(item.image)]);
+        // .buttons([
+        //     builder.CardAction.imBack(session, "buy classic white t-shirt", "Buy")
+        // ]);
 }
 // // Add help dialog
 // bot.dialog('help', function (session) {
