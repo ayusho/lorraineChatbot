@@ -1,4 +1,3 @@
-
 // This loads the environment variables from the .env file
 require('dotenv-extended').load();
 
@@ -72,7 +71,7 @@ var bot = new builder.UniversalBot(connector, function (session) {
 });
 // You can provide your own model by specifing the 'LUIS_MODEL_URL' environment variable
 // This Url can be obtained by uploading or creating your model from the LUIS portal: https://www.luis.ai/
-var recognizer = new builder.LuisRecognizer(process.env.LUIS_MODEL_URL);
+var recognizer = new builder.LuisRecognizer('https://westus.api.cognitive.microsoft.com/luis/v2.0/apps/077f3176-c67a-43c4-b375-86480d2a903f?subscription-key=be9a51573555418a8f1195f0e32b5f16&timezoneOffset=0&verbose=true');
 bot.recognizer(recognizer);
 
 //=========================================================
@@ -92,18 +91,15 @@ bot.dialog('returnItem', [
             next({
                 response: [itemsEntity.entity, dateEntity.entity]
             });
-        }
-        else if (itemsEntity != null) {
+        } else if (itemsEntity != null) {
             next({
                 response: [itemsEntity.entity, null]
             });
-        }
-        else if (dateEntity != null) {
+        } else if (dateEntity != null) {
             next({
                 response: [null, dateEntity.entity]
             });
-        }
-        else {
+        } else {
             next({
                 response: [null, null]
             });

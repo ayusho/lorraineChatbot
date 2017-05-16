@@ -4,7 +4,7 @@
 var request = require('request');
 
 var SPELL_CHECK_API_URL = 'https://api.cognitive.microsoft.com/bing/v5.0/spellcheck/?form=BCSSCK',
-    SPELL_CHECK_API_KEY = process.env.BING_SPELL_CHECK_API_KEY;
+    SPELL_CHECK_API_KEY = '8ae90e80bc4346d59c0f07529dadaa4e';
 
 /**
  * Gets the correct spelling for the given text
@@ -29,11 +29,9 @@ exports.getCorrectedText = function (text) {
                 request.post(requestData, function (error, response, body) {
                     if (error) {
                         reject(error);
-                    }
-                    else if (response.statusCode != 200) {
+                    } else if (response.statusCode != 200) {
                         reject(body);
-                    }
-                    else {
+                    } else {
                         var previousOffset = 0;
                         var result = '';
 
