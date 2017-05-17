@@ -55,11 +55,36 @@ var selectedItem;
 // Add first run dialog
 bot.dialog('returnItem', [
     function (session, args, next) {
+        //     var startDate, endDate, itemType;
 
+        //     for(i=0; i<args.intent.entities.length; i++){
+        //         if(args.intent.entities.type == 'builtin.datetimeV2.date'){
+        //             if(args.intent.entities[i].resolution.values[0].type == 'date')
+        //             {
+        //                 startDate = args.intent.entities[i].resolution.values[0].value;
+        //                 endDate = null;
+        //             }
+        //             else if(args.intent.entities[i].resolution.values[0].type == 'daterange'){
+        //                 startDate = args.intent.entities[i].resolution.values[0].start;
+        //                 endDate = args.intent.entities[i].resolution.values[0].end;
+        //             } 
+        //         }
+        //         else if(args.intent.entities.type == 'items')
+        //             itemType = args.intent.entities[i].resolution.values[0];
+        //     }
 
-        // try extracting entities
-        var dateEntity = builder.EntityRecognizer.findEntity(args.intent.entities, 'date');
+        //try extracting entities
+        // console.log(JSON.stringify(args));
+        var dateEntity = builder.EntityRecognizer.findEntity(args.intent.entities, 'builtin.datetimeV2.daterange');
         var itemsEntity = builder.EntityRecognizer.findEntity(args.intent.entities, 'items');
+        if (itemsEntity != null)
+            itemType = itemsEntity.value;
+
+
+         console.log("start date : " + dateEntity);
+         console.log("end date : " + itemsEntity);
+        // console.log("item : " + itemType);
+
         session.send('Hi Alison, of course. We are processing your request. Please wait for a moment...');
         if (itemsEntity != null && dateEntity != null) {
             next({
@@ -102,19 +127,33 @@ bot.dialog('returnItem', [
         //builder.Prompts.text(session, "select an item");
     },
     function (session) {
-        builder.Prompts.text(session, "Can you please provide why you want to return ?");
+        builder.Prompts.text(session, "Please can you tell me why you are returning the item?");
     },
     function (session, results) {
         console.log(results.response);
         session.userData.returnReason = results.response;
         session.send("Thanks for your response.");
-        builder.Prompts.choice(session, 'Please select a return method', ['A', 'B', 'C', 'Drop at Post Office']);
+        builder.Prompts.choice(session, 'Can you select the return method you wish to use', ['Arrange Hermes Courrier', 'Drop at Hermes Parcel Shop', 'Use InPost 24/7 Parcel Locker', 'Drop at Post Office']);
     },
-    function (session, results) {
+    function (session, results,next) {
         session.userData.returnMethod = results.response.entity;
-        session.send('You selected ' + session.userData.returnMethod + ' return method.');
         session.send('Okay. The nearest Post Office to your delivery address is:');
         session.send('Broadway Post Office\n\n1 Broadway,\n\nWestminster,\n\nLondon SW1H 0AX');
+
+        next({
+            response: null
+        });
+    },
+    function (session, results) {
+        session.send('Return Instructions: Cut out Royal Mail return label from your Customer Advice Note and stick this on the original packaging.');
+        session.send('Next, repack the top and the advice note inside so that it is ready for collection.');
+        builder.Prompts.choice(session, 'Is there anything else I can help you with?', ['Yes', 'No']);
+    },
+    function (session, results) {
+        session.userData.yesOrNo = results.response.entity;
+        if (session.userData.yesOrNo == 'No') {
+            session.send('Okay thanks Alison, goodbye');
+        }
         session.endDialog();
     }
 ]).triggerAction({
