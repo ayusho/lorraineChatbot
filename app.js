@@ -81,8 +81,8 @@ bot.dialog('returnItem', [
             itemType = itemsEntity.value;
 
 
-         console.log("start date : " + dateEntity);
-         console.log("end date : " + itemsEntity);
+        console.log("start date : " + dateEntity);
+        console.log("end date : " + itemsEntity);
         // console.log("item : " + itemType);
 
         session.send('Hi Alison, of course. We are processing your request. Please wait for a moment...');
@@ -117,15 +117,31 @@ bot.dialog('returnItem', [
                 session.send('I found %d items:', listOfItems.length);
                 var message = new builder.Message()
                     .attachmentLayout(builder.AttachmentLayout.carousel)
-                    .attachments(listOfItems.map(itemAsAttachment));
-
+                    .attachments(listOfItems.map(function (item) {
+                        return new builder.HeroCard(session)
+                            .title(item.name)
+                            // .subtitle('COLOUR : %s',item)
+                            .images([new builder.CardImage().url(item.image)])
+                            //.buttons([new builder.CardAction(session).title('Select').type('openUrl').value('http://google.com')
+                            .buttons([builder.CardAction.imBack(session, session.gettext('You selected: '+item.name), item.name)]);
+                        // .builder.CardAction.postBack(session, item.name, itemAsAttachment.name)
+                    }));
                 session.send(message);
-                session.send(selectedItem);
-                next();
-                // session.endDialog();
+                //session.send(selectedItem);
+                //next();
+                bot.beginDialog('/returnReason');
+                session.endDialog();
             });
         //builder.Prompts.text(session, "select an item");
     },
+
+]).triggerAction({
+    matches: 'returnItem',
+    onInterrupted: function (session) {
+        session.send('Please provide information');
+    }
+});
+bot.dialog('/returnReason', [
     function (session) {
         builder.Prompts.text(session, "Please can you tell me why you are returning the item?");
     },
@@ -133,35 +149,45 @@ bot.dialog('returnItem', [
         console.log(results.response);
         session.userData.returnReason = results.response;
         session.send("Thanks for your response.");
-        builder.Prompts.choice(session, 'Can you select the return method you wish to use', ['Arrange Hermes Courrier', 'Drop at Hermes Parcel Shop', 'Use InPost 24/7 Parcel Locker', 'Drop at Post Office']);
-    },
-    function (session, results,next) {
-        session.userData.returnMethod = results.response.entity;
-        session.send('Okay. The nearest Post Office to your delivery address is:');
-        session.send('Broadway Post Office\n\n1 Broadway,\n\nWestminster,\n\nLondon SW1H 0AX');
-
-        next({
-            response: null
-        });
-    },
-    function (session, results) {
-        session.send('Return Instructions: Cut out Royal Mail return label from your Customer Advice Note and stick this on the original packaging.');
-        session.send('Next, repack the top and the advice note inside so that it is ready for collection.');
-        builder.Prompts.choice(session, 'Is there anything else I can help you with?', ['Yes', 'No']);
-    },
-    function (session, results) {
-        session.userData.yesOrNo = results.response.entity;
-        if (session.userData.yesOrNo == 'No') {
-            session.send('Okay thanks Alison, goodbye');
-        }
-        session.endDialog();
-    }
-]).triggerAction({
-    matches: 'returnItem',
+        session.beginDialog('/returnMethod');
+    }]).triggerAction({
+    matches:/^You selected.*/,
     onInterrupted: function (session) {
         session.send('Please provide information');
     }
-});
+});;
+bot.dialog('/returnMethod', [
+    function (session) {
+        builder.Prompts.choice(session, 'Can you select the return method you wish to use', ['Arrange Hermes Courrier', 'Drop at Hermes Parcel Shop', 'Use InPost 24/7 Parcel Locker', 'Drop at Post Office']);
+    },
+    function (session, results) {
+        session.userData.returnMethod = results.response.entity;
+        session.send('Okay. The nearest Post Office to your delivery address is:');
+        session.send('Broadway Post Office\n\n1 Broadway,\n\nWestminster,\n\nLondon SW1H 0AX');
+        session.beginDialog('/instructions');
+
+    }
+
+]);
+bot.dialog('/instructions', [
+    function (session) {
+        session.send('Return Instructions: Cut out Royal Mail return label from your Customer Advice Note and stick this on the original packaging.');
+        session.send('Next, repack the top and the advice note inside so that it is ready for collection.');
+        session.beginDialog('/endReturn');
+    }
+]);
+bot.dialog('/endReturn', [
+    function (session) {
+        builder.Prompts.choice(session, 'Is there anything else I can help you with?', ['Yes', 'No']);
+    },
+    function (session, results) {
+    session.userData.yesOrNo = results.response.entity;
+    if (session.userData.yesOrNo == 'No') {
+        session.send('Okay thanks Alison, goodbye');
+    }
+    session.endDialog();
+}
+]);
 
 // Helpers
 function itemAsAttachment(item) {
