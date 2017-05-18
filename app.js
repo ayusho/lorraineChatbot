@@ -106,7 +106,7 @@ bot.dialog('returnItem', [
                             // .subtitle('COLOUR : %s',item)
                             .images([new builder.CardImage().url(item.image)])
                             //.buttons([new builder.CardAction(session).title('Select').type('openUrl').value('http://google.com')
-                            .buttons([builder.CardAction.imBack(session, ('You selected: ' + item.name), 'Select')]);
+                            .buttons([builder.CardAction.imBack(session, ('You selected: ' + item.name), item.name)]);
                         // .builder.CardAction.postBack(session, item.name, itemAsAttachment.name)
                     }));
                 session.send(message);
