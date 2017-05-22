@@ -3,6 +3,7 @@ var builder = require('botbuilder');
 var Store = require('./store');
 var spellService = require('./spell-service');
 var exec = require('child_process').exec;
+var http = require('http');
 var child;
 var customerListJSON;
 //=========================================================
@@ -63,26 +64,79 @@ bot.dialog('returnItem', [
         console.log("start date : " + startDate);
         console.log("end date : " + endDate);
         console.log("item : " + itemType);
-        var curlcmd = 'curl -X GET http://lorrainewebservice.azurewebsites.net/api/getCustomerList';
-        child = exec(curlcmd, function (error, stdout, stderr) {
-            if (stdout) {
-                console.log("curl called");
-                customerListJSON = JSON.parse(stdout);
-                console.log(customerListJSON[0].name);
-                customer.customer_id = customerListJSON[0].customer_id;
-                customer.name = customerListJSON[0].name;
-                customer.email = customerListJSON[0].email;
-                customer.phone = customerListJSON[0].phone;
-                customer.address = customerListJSON[0].address;
-            }
-            session.send('Hi ' + customer.name + ', of course. We are processing your request. Please wait for a moment...');
-            setTimeout(function () {
-                next({
-                    response: [startDate, endDate, itemType]
-                });
-            }, 2000);
+        var options = {
+            host: 'lorrainewebservice.azurewebsites.net'
+            , path: '/api/getCustomerList'
+            , method: 'GET'
+        };
+        var req = http.request(options, function (res) {
+            console.log('STATUS: ' + res.statusCode);
+            console.log('HEADERS: ' + JSON.stringify(res.headers));
+            res.setEncoding('utf8');
+            res.on('data', function (stdout) {
+                if (stdout) {
+                    console.log('BODY: ' + stdout);
+                    console.log("inside http request called");
+                    customerListJSON = JSON.parse(stdout);
+                    console.log(customerListJSON[0].name);
+                    customer.customer_id = customerListJSON[0].customer_id;
+                    customer.name = customerListJSON[0].name;
+                    customer.email = customerListJSON[0].email;
+                    customer.phone = customerListJSON[0].phone;
+                    customer.address = customerListJSON[0].address;
+                }
+                session.send('Hi ' + customer.name + ',of course. We are processing your request. Please wait for a moment...');
+                setTimeout(function () {
+                    next({
+                        response: [startDate, endDate, itemType]
+                    });
+                }, 2000);
+            });
         });
+        req.on('error', function (e) {
+            console.log('problem with request: ' + e.message);
+        });
+        // write data to request body
+        req.write('data\n');
+        req.write('data\n');
+        req.end();
+        //        var curlcmd = 'curl -X GET http://lorrainewebservice.azurewebsites.net/api/getCustomerList';
+        //        child = exec(curlcmd, function (error, stdout, stderr) {
+        //            if (stdout) {
+        //                console.log("curl called");
+        //                customerListJSON = JSON.parse(stdout);
+        //                console.log(customerListJSON[0].name);
+        //                customer.customer_id = customerListJSON[0].customer_id;
+        //                customer.name = customerListJSON[0].name;
+        //                customer.email = customerListJSON[0].email;
+        //                customer.phone = customerListJSON[0].phone;
+        //                customer.address = customerListJSON[0].address;
+        //            }
+        //            session.send('Hi ' + customer.name + ', of course. We are processing your request. Please wait for a moment...');
+        //            setTimeout(function () {
+        //                next({
+        //                    response: [startDate, endDate, itemType]
+        //                });
+        //            }, 2000);
+        //        });
     }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    
     , function (session, results, next) {
         var startDate = results.response[0];
         var endDate = results.response[1];
@@ -123,6 +177,23 @@ bot.dialog('/returnReason', [
     function (session) {
         builder.Prompts.text(session, "Please can you tell me why you are returning the item?");
     }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    
     , function (session, results) {
         console.log(results.response);
         session.userData.returnReason = results.response;
@@ -131,11 +202,11 @@ bot.dialog('/returnReason', [
             session.beginDialog('/returnMethod');
         }, 1000);
     }]).triggerAction({
-        matches: /^You selected.*/
-        , onInterrupted: function (session) {
-            session.send('Please provide information');
-        }
-    });
+    matches: /^You selected.*/
+    , onInterrupted: function (session) {
+        session.send('Please provide information');
+    }
+});
 bot.dialog('/returnMethod', [
     function (session) {
         builder.Prompts.choice(session, 'Can you select the return method you wish to use', ['Arrange Hermes Courrier', 'Drop at Hermes Parcel Shop', 'Use InPost 24/7 Parcel Locker', 'Drop at Post Office'], {
@@ -152,6 +223,23 @@ bot.dialog('/returnMethod', [
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    
     , function (session, results) {
         session.userData.returnMethod = results.response.entity;
         session.send('Okay. The nearest Post Office to your delivery address is:');
@@ -202,6 +290,23 @@ bot.dialog('/endReturn', [
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    
     , function (session, results) {
         session.userData.yesOrNo = results.response.entity;
         if (session.userData.yesOrNo == 'No') {
