@@ -58,8 +58,8 @@ module.exports = {
         return new Promise(function (resolve) {
             var options = {
                 host: 'lorrainewebservice.azurewebsites.net',
-                // path: '/api/displayItems?name=' + itemName + '&color=' + itemColor + '&size=' + itemSize,
-                path: '/api/displayItems?name=blouse&color=white&size=12',
+                path: '/api/displayItems?name=' + itemName + '&color=' + itemColor + '&size=' + itemSize,
+                //path: '/api/displayItems?name=blouse&color=white&size=12',
                 method: 'GET'
             };
             var req = http.request(options, function (res) {

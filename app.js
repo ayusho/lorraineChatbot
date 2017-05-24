@@ -18,13 +18,7 @@ var customer = [
         address: ''
     }
 ];
-var orderData = [
-    {
-        itemName: '',
-        itemColor: '',
-        itemSize: ''
-    }
-];
+var orderData = [];
 //=========================================================
 // Bot Setup
 //=========================================================
@@ -90,7 +84,7 @@ bot.dialog('returnItem', [
                     customer.phone = customerListJSON[0].phone;
                     customer.address = customerListJSON[0].address;
                 }
-                session.send('Hi ' + customer.name + ',of course. We are processing your request. Please wait for a moment...');
+                session.send('Hi ' + customer.name + ', of course. We are processing your request. Please wait for a moment...');
                 setTimeout(function () {
                     next({
                         response: [startDate, endDate, itemType]
@@ -205,15 +199,162 @@ bot.dialog('/endReturn', [
 bot.dialog('orderItem', [
     function (session, args, next) {
         console.log(args.intent.entities);
-//        var count = 0;
-//        for (i = 0; i < args.intent.entities.length; i++) {
-//            if (args.intent.entities[i].type == 'color-item') {
-//                var res = args.intent.entities[i].entity.split(" ");
-//                orderData[count].itemColor = res[0];
-//                orderData[count++].itemName = res[1];
-//            }
-//        }
+        var count = 0;
+        for (i = 0; i < args.intent.entities.length; i++) {
+            if (args.intent.entities[i].type == 'color-item') {
+                var res = args.intent.entities[i].entity.split(" ");
+                orderData.push({
+                    itemColor: res[0],
+                    itemName: res[1],
+                    itemSize: null
+                })
+            }
+        }
+        console.log("orderdata:" + JSON.stringify(orderData));
 
+        //        var options = {
+        //            host: 'lorrainewebservice.azurewebsites.net',
+        //            path: '/api/getCustomerList',
+        //            method: 'GET'
+        //        };
+        //        var req = http.request(options, function (res) {
+        //            console.log('STATUS: ' + res.statusCode);
+        //            console.log('HEADERS: ' + JSON.stringify(res.headers));
+        //            res.setEncoding('utf8');
+        //            res.on('data', function (stdout) {
+        //                if (stdout) {
+        //                    console.log('BODY: ' + stdout);
+        //                    console.log("inside http request called");
+        //                    customerListJSON = JSON.parse(stdout);
+        //                    console.log(customerListJSON[0].name);
+        //                    customer.customer_id = customerListJSON[0].customer_id;
+        //                    customer.name = customerListJSON[0].name;
+        //                    customer.email = customerListJSON[0].email;
+        //                    customer.phone = customerListJSON[0].phone;
+        //                    customer.address = customerListJSON[0].address;
+        //                }
+        //                //builder.Prompts.number(session, 'Hi ' + customer.name + ', I would be happy to help you.');
+        //                session.send('Hi ' + customer.name + ', I would be happy to help you.');
+        //
+        //
+        //                /*setTimeout(function () {
+        //    next({
+        //        response: [startDate, endDate, itemType]
+        //    });
+        //}, 2000);*/
+        //            });
+        //
+        //        });
+        //        req.on('error', function (e) {
+        //            console.log('problem with request: ' + e.message);
+        //        });
+        //        // write data to request body
+        //        req.write('data\n');
+        //        req.write('data\n');
+        //        req.end();
+        getCustomerData().then(function () {
+            session.send('Hi ' + customer.name + ', of course. We are processing your request. Please wait for a moment...');
+            session.userData.counterItems = -1;
+            bot.beginDialog('/orderLooping');
+
+
+        });
+
+
+        session.endDialog();
+    }
+
+
+//    ,
+//    function (session, results, next) {
+//        orderData.size = results.response;
+//        session.send("These are the tailored black skirt we have available in size 14");
+//        Store.findOrderItems(orderData[0].itemName, orderData[0].itemColor, orderData[0].itemSize).then(function (listOfItemsToOrder) {
+//            // args
+//            var message = new builder.Message().attachmentLayout(builder.AttachmentLayout.carousel).attachments(listOfItemsToOrder.map(function (item) {
+//                return new builder.HeroCard(session).title(item.name)
+//                    .images([new builder.CardImage().url(item.image)])
+//                    .title(item.name)
+//                    .subtitle('€' + item.price)
+//                    .buttons([builder.CardAction.imBack(session, ('You selected: ' + item.name), item.name)]);
+//                // .builder.CardAction.postBack(session, item.name, itemAsAttachment.name)
+//            }));
+//            session.send(message);
+//            //session.send(selectedItem);
+//            //next();
+//            bot.beginDialog('/returnReason');
+//            session.endDialog();
+//        });
+//    }
+
+
+]).triggerAction({
+    matches: 'orderItem',
+    onInterrupted: function (session) {
+        session.send('Please provide information');
+    }
+});
+bot.dialog('/orderLooping', [
+     function (session) {
+        session.userData.counterItems++;
+        console.log(JSON.stringify(orderData));
+        while (session.userData.counterItems < orderData.length) {
+            if (orderData[session.userData.counterItems].itemSize == null) {
+                session.userData.currentOrderData = orderData[session.userData.counterItems];
+                console.log("currentOrderdata: " + JSON.stringify(session.userData.currentOrderData));
+                session.beginDialog('/orderSizeInput', session.userData.currentOrderData);
+                //continue;
+            }
+        }
+        session.endDialog();
+    }
+]);
+bot.dialog('/orderSizeInput', [
+    function (session, args, next) {
+        session.dialogData.currentOrderData = args || {};
+        console.log("args-" + JSON.stringify(args));
+        console.log("orderSizeInput function 1" + JSON.stringify(session.dialogData.currentOrderData));
+        if (session.dialogData.currentOrderData.itemSize == null)
+            builder.Prompts.number(session, 'What size of ' + session.dialogData.currentOrderData.itemColor + ' ' +
+                session.dialogData.currentOrderData.itemName + ' would you like to order?');
+        else
+            next();
+
+    },
+    function (session, results) {
+        console.log("orderSizeInput function 2" + results.response);
+        session.dialogData.currentOrderData.itemSize = results.response;
+        session.userData.selectedItems = [];
+        session.send('These are the tailored ' + session.dialogData.currentOrderData.itemColor + ' ' + session.dialogData.currentOrderData.itemName + ' we have available in size ' + session.dialogData.currentOrderData.itemSize);
+        Store.findOrderItems(session.dialogData.currentOrderData.itemName, session.dialogData.currentOrderData.itemColor, session.dialogData.currentOrderData.itemSize).then(function (listOfItemsToOrder) {
+            // args
+            var message = new builder.Message().attachmentLayout(builder.AttachmentLayout.carousel).attachments(listOfItemsToOrder.map(function (item) {
+
+                return new builder.HeroCard(session).title(item.name)
+                    .images([new builder.CardImage().url(item.image)])
+                    .title(item.name)
+                    .subtitle('€' + item.price)
+                    .buttons([builder.CardAction.imBack(session, ('Added to Bag ' + item.name), item.name)]);
+                // .builder.CardAction.postBack(session, item.name, itemAsAttachment.name)//
+                //session.userData.selectedItems.push(item.name);
+                //console.log('Selected item' + session.userData.selectedItems);
+            }));
+            session.send(message);
+            session.endDialog();
+            //session.send(selectedItem);
+            //next();
+            //            session.endDialogWithResult({
+            //                response: session.dialogData.currentOrderData
+            //            });
+        });
+    }
+
+]);
+
+
+//helper functions
+function getCustomerData() {
+    return new Promise(function (resolve) {
         var options = {
             host: 'lorrainewebservice.azurewebsites.net',
             path: '/api/getCustomerList',
@@ -235,13 +376,13 @@ bot.dialog('orderItem', [
                     customer.phone = customerListJSON[0].phone;
                     customer.address = customerListJSON[0].address;
                 }
-                builder.Prompts.number(session, 'Hi ' + customer.name + ', I am happy to help, what size skirt would you like to order');
-                /*setTimeout(function () {
-    next({
-        response: [startDate, endDate, itemType]
-    });
-}, 2000);*/
+                //builder.Prompts.number(session, 'Hi ' + customer.name + ', I would be happy to help you.');
+                setTimeout(function () {
+                    resolve(customer);
+                }, 1000);
+
             });
+
         });
         req.on('error', function (e) {
             console.log('problem with request: ' + e.message);
@@ -250,31 +391,5 @@ bot.dialog('orderItem', [
         req.write('data\n');
         req.write('data\n');
         req.end();
-    },
-    function (session, results, next) {
-        orderData.size = results.response;
-        session.send("These are the tailored black skirt we have available in size 14");
-        Store.findOrderItems(orderData[0].itemName, orderData[0].itemColor, orderData[0].itemSize).then(function (listOfItemsToOrder) {
-            // args
-            var message = new builder.Message().attachmentLayout(builder.AttachmentLayout.carousel).attachments(listOfItemsToOrder.map(function (item) {
-                return new builder.HeroCard(session).title(item.name)
-                    .images([new builder.CardImage().url(item.image)])
-                    .title(item.name)
-                    .subtitle('€' + item.price)
-                    .buttons([builder.CardAction.imBack(session, ('You selected: ' + item.name), item.name)]);
-                // .builder.CardAction.postBack(session, item.name, itemAsAttachment.name)
-            }));
-            session.send(message);
-            //session.send(selectedItem);
-            //next();
-            bot.beginDialog('/returnReason');
-            session.endDialog();
-        });
-    }
-
-]).triggerAction({
-    matches: 'orderItem',
-    onInterrupted: function (session) {
-        session.send('Please provide information');
-    }
-});
+    })
+}
