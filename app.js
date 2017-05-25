@@ -126,7 +126,6 @@ bot.dialog('returnItem', [
             session.send(message);
             //session.send(selectedItem);
             //next();
-            //[AO]
             // session.beginDialog('/returnReason');
             session.endDialog();
         });
@@ -143,12 +142,6 @@ bot.dialog('/returnReason', [
     function (session) {
         builder.Prompts.text(session, "Please can you tell me why you are returning the item?");
     }
-
-
-
-
-
-
 
 
     
@@ -171,22 +164,6 @@ bot.dialog('/returnMethod', [
             listStyle: builder.ListStyle.button
         });
     }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
     
@@ -215,22 +192,6 @@ bot.dialog('/endReturn', [
             listStyle: builder.ListStyle.button
         });
     }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
     
@@ -265,7 +226,6 @@ bot.dialog('orderItem', [
             session.send('Hi ' + customer.name + ', of course. We are processing your request. Please wait for a moment...');
             session.userData.counterItems = 0;
             //session.beginDialog('/orderLooping');
-            //[AO]
             session.beginDialog('/orderSizeInput');
             //session.endDialog();
         });
@@ -312,14 +272,6 @@ bot.dialog('/orderSizeInput', [
     }
 
 
-
-
-
-
-
-
-
-
     
     , function (session, results) {
         console.log("orderSizeInput function 2" + results.response);
@@ -332,9 +284,7 @@ bot.dialog('/orderSizeInput', [
                 return new builder.HeroCard(session).title(item.name).images([new builder.CardImage().url(item.image)]).title(item.name).subtitle('€' + item.price).buttons([builder.CardAction.imBack(session, ('Added to Bag ' + item.name), item.name)]);
             }));
             session.send(message);
-            //[AO]
             //session.beginDialog('/afterItemSelected');
-            console.log("beginDialog ends");
             session.endDialog();
         });
     }
@@ -347,7 +297,6 @@ bot.dialog('/afterItemSelected', [
             session.send('That\'s lovely, great choice');
             session.beginDialog('/orderSizeInput');
         }
-        //[AO]
         else session.beginDialog('/afterItemOrdered');
         //session.endDialog();
     }
@@ -363,10 +312,6 @@ bot.dialog('/afterItemOrdered', [
             listStyle: builder.ListStyle.button
         });
     }
-
-
-
-
 
 
     
@@ -405,22 +350,6 @@ bot.dialog('/deliveryType', [
     }
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     
     , function (session, results) {
         session.userData.yesOrNo = results.response.entity;
@@ -438,22 +367,6 @@ bot.dialog('/paymentType', [
     }
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     
     , function (session, results) {
         session.userData.yesOrNo = results.response.entity;
@@ -469,6 +382,9 @@ bot.dialog('/confirmDelivery', [
             listStyle: builder.ListStyle.button
         });
     }
+
+
+    
     , function (session, results) {
         session.userData.yesOrNo = results.response.entity;
         if (session.userData.yesOrNo == 'Yes') {
@@ -485,10 +401,11 @@ bot.dialog('/endOrder', [
         });
     }
 
+
     
     , function (session, results) {
-        session.userData.endOrderyesOrNo = results.response.entity;
-        if (session.userData.endOrderyesOrNo == 'No') {
+        session.userData.yesOrNo = results.response.entity;
+        if (session.userData.yesOrNo == 'No') {
             orderData = [];
             counter = 0;
             session.endConversation('Talk to you again soon Alison, goodbye');
