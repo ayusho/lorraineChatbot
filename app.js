@@ -5,19 +5,24 @@ var spellService = require('./spell-service');
 var exec = require('child_process').exec;
 var http = require('http');
 var child;
-var customerListJSON;
 //=========================================================
 // Dummy Data
 //=========================================================
 var customer = [
     {
-        customer_id: '',
-        name: '',
-        email: '',
-        phone: '',
-        address: ''
+        customer_id: ''
+        , name: ''
+        , email: ''
+        , phone: ''
+        , address: ''
     }
 ];
+var customerListJSON;
+var returnItems;
+var productSelectedForReturned;
+var productSelectedForOrder;
+var productArraySelectedForOrder = [];
+var itemsOrdered = [];
 var orderData = [];
 var counter = 0;
 //=========================================================
@@ -30,8 +35,8 @@ server.listen(process.env.port || process.env.PORT || 3978, function () {
 });
 // Create chat bot
 var connector = new builder.ChatConnector({
-    appId: 'c4d12a93-c875-47ca-9700-28e949ec657a',
-    appPassword: 'spZVMeScmRcN7QdP3afw5wE'
+    appId: 'c4d12a93-c875-47ca-9700-28e949ec657a'
+    , appPassword: 'spZVMeScmRcN7QdP3afw5wE'
 });
 server.post('/api/messages', connector.listen());
 var bot = new builder.UniversalBot(connector, function (session) {
@@ -54,20 +59,22 @@ bot.dialog('returnItem', [
                 if (args.intent.entities[i].resolution.values[0].type == 'date') {
                     startDate = args.intent.entities[i].resolution.values[0].value;
                     endDate = null;
-                } else /*if (args.intent.entities[i].resolution.values[0].type == 'daterange') */ {
+                }
+                else /*if (args.intent.entities[i].resolution.values[0].type == 'daterange') */ {
                     console.log("inside daterange");
                     startDate = args.intent.entities[i].resolution.values[0].start;
                     endDate = args.intent.entities[i].resolution.values[0].end;
                 }
-            } else if (args.intent.entities[i].type == 'items') itemType = args.intent.entities[i].resolution.values[0];
+            }
+            else if (args.intent.entities[i].type == 'items') itemType = args.intent.entities[i].resolution.values[0];
         }
         console.log("start date : " + startDate);
         console.log("end date : " + endDate);
         console.log("item : " + itemType);
         var options = {
-            host: 'lorrainewebservice.azurewebsites.net',
-            path: '/api/getCustomerList',
-            method: 'GET'
+            host: 'lorrainewebservice.azurewebsites.net'
+            , path: '/api/getCustomerList'
+            , method: 'GET'
         };
         var req = http.request(options, function (res) {
             console.log('STATUS: ' + res.statusCode);
@@ -104,21 +111,56 @@ bot.dialog('returnItem', [
 
 
 
-    ,
-    function (session, results, next) {
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    
+    , function (session, results, next) {
         var startDate = results.response[0];
         var endDate = results.response[1];
         var itemType = results.response[2];
         // Async search
         Store.findItems(customer.customer_id, startDate, endDate, itemType).then(function (listOfItems) {
             // args
+            returnItems = listOfItems;
             if (startDate == null || startDate == undefined || startDate == '') {
                 session.send('I found %d items you bought:', listOfItems.length);
-            } else {
+            }
+            else {
                 session.send('I found %d items you bought on %s:', listOfItems.length, startDate);
             }
             var message = new builder.Message().attachmentLayout(builder.AttachmentLayout.carousel).attachments(listOfItems.map(function (item) {
-                return new builder.HeroCard(session).title(item.name).images([new builder.CardImage().url(item.image)]).buttons([builder.CardAction.imBack(session, ('You selected: ' + item.name), item.name)]);
+                return new builder.HeroCard(session).title(item.name).images([new builder.CardImage().url(item.image)]).buttons([ /*builder.CardAction.imBack(session, ('You selected: ' + item.name), item.name),*/ builder.CardAction.postBack(session, ('You selected: ' + item.productId + ',' + item.name), item.name)]);
                 // .builder.CardAction.postBack(session, item.name, itemAsAttachment.name)
             }));
             session.send(message);
@@ -131,29 +173,76 @@ bot.dialog('returnItem', [
     },
 
 ]).triggerAction({
-    matches: 'returnItem',
-    onInterrupted: function (session) {
+    matches: 'returnItem'
+    , onInterrupted: function (session) {
         session.send('Please provide information');
     }
 });
 bot.dialog('/returnReason', [
-    function (session) {
-        builder.Prompts.text(session, "Please can you tell me why you are returning the item?");
+    function (session, args) {
+        console.log("item list inside returnReason " + JSON.stringify(args));
+        productSelectedForReturned = args.intent.matched[0].replace('You selected: ', '').split(',');
+        console.log(":) selected item is " + typeof (productSelectedForReturned));
+        var productIdSelectedForReturn = matchReturnItem(returnItems, productSelectedForReturned[0]);
+        console.log(":) item id" + productIdSelectedForReturn);
+        builder.Prompts.text(session, 'Please can you tell me why you are returning ' + productSelectedForReturned[1] + '?');
     }
 
 
 
-    ,
-    function (session, results) {
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    
+    , function (session, results) {
         console.log(results.response);
         session.userData.returnReason = results.response;
-        session.send("Thanks for your response.");
-        setTimeout(function () {
-            session.beginDialog('/returnMethod');
-        }, 1000);
+        console.log("reason" + results.response + ' ' + productSelectedForReturned[0]);
+        Store.sendSelectedItemForReturn(productSelectedForReturned[0], results.response).then(function (responseValue) {
+            if (responseValue == "success") {
+                session.send("Thanks for your response.");
+                setTimeout(function () {
+                    session.beginDialog('/returnMethod');
+                }, 1000);
+            }
+            else {
+                session.send("Some problem occurred while processing...");
+            }
+        })
     }]).triggerAction({
-    matches: /^You selected.*/,
-    onInterrupted: function (session) {
+    matches: /^You selected.*/
+    , onInterrupted: function (session) {
         session.send('Please provide information');
     }
 });
@@ -166,8 +255,41 @@ bot.dialog('/returnMethod', [
 
 
 
-    ,
-    function (session, results) {
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    
+    , function (session, results) {
         session.userData.returnMethod = results.response.entity;
         session.send('Okay. The nearest Post Office to your delivery address is:');
         session.send('Broadway Post Office\n\n1 Broadway,\n\nWestminster,\n\nLondon SW1H 0AX');
@@ -195,8 +317,40 @@ bot.dialog('/endReturn', [
 
 
 
-    ,
-    function (session, results) {
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    
+    , function (session, results) {
         session.userData.yesOrNo = results.response.entity;
         if (session.userData.yesOrNo == 'No') {
             session.send('Okay thanks Alison, goodbye');
@@ -216,9 +370,9 @@ bot.dialog('orderItem', [
                 if (res[1] == 'skirt') size = 14;
                 else if (res[1] == 'blouse') size = 12;
                 orderData.push({
-                    itemColor: res[0],
-                    itemName: res[1],
-                    itemSize: size
+                    itemColor: res[0]
+                    , itemName: res[1]
+                    , itemSize: size
                 })
             }
         }
@@ -234,8 +388,8 @@ bot.dialog('orderItem', [
 
 
 ]).triggerAction({
-    matches: 'orderItem',
-    onInterrupted: function (session) {
+    matches: 'orderItem'
+    , onInterrupted: function (session) {
         session.send('Please provide information');
     }
 });
@@ -264,7 +418,8 @@ bot.dialog('/orderSizeInput', [
         if (orderData[counter].itemSize == null) {
             builder.Prompts.number(session, 'What size of ' + orderData[counter].itemColor + ' ' + orderData[counter].itemName + ' would you like to order?');
             console.log("after prompt");
-        } else {
+        }
+        else {
             next({
                 response: null
             });
@@ -273,8 +428,38 @@ bot.dialog('/orderSizeInput', [
 
 
 
-    ,
-    function (session, results) {
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    
+    , function (session, results) {
         console.log("orderSizeInput function 2" + results.response);
         if (results.response != null) orderData[counter].itemSize = results.response;
         //session.userData.selectedItems = [];
@@ -282,7 +467,7 @@ bot.dialog('/orderSizeInput', [
         Store.findOrderItems(orderData[counter].itemName, orderData[counter].itemColor, orderData[counter].itemSize).then(function (listOfItemsToOrder) {
             // args
             var message = new builder.Message().attachmentLayout(builder.AttachmentLayout.carousel).attachments(listOfItemsToOrder.map(function (item) {
-                return new builder.HeroCard(session).title(item.name).images([new builder.CardImage().url(item.image)]).title(item.name).subtitle('€' + item.price).buttons([builder.CardAction.imBack(session, ('Added to Bag ' + item.name), item.name)]);
+                return new builder.HeroCard(session).title(item.name).images([new builder.CardImage().url(item.image)]).title(item.name).subtitle('€' + item.price).buttons([builder.CardAction.postBack(session, ('Added to Bag ' + item.name + ',' + item.productId), item.name)]);
             }));
             session.send(message);
             //session.beginDialog('/afterItemSelected');
@@ -292,17 +477,26 @@ bot.dialog('/orderSizeInput', [
 
 ]);
 bot.dialog('/afterItemSelected', [
-    function (session) {
+    function (session, args) {
+        productSelectedForOrder = args.intent.matched[0].replace('Added to Bag ', '').split(',');
+        console.log("ordered item is :)" + productSelectedForOrder[0] + "and " + productSelectedForOrder[1]);
+        productArraySelectedForOrder.push(productSelectedForOrder[0]);
+        itemsOrdered.push({
+            productId: productSelectedForOrder[1]
+            , customerId: customer.customer_id
+        });
+        console.log("items ordered: " + JSON.stringify(itemsOrdered));
         counter = counter + 1;
         if (counter < orderData.length) {
             session.send('That\'s lovely, great choice');
             session.beginDialog('/orderSizeInput');
-        } else session.beginDialog('/afterItemOrdered');
+        }
+        else session.beginDialog('/afterItemOrdered');
         //session.endDialog();
     }
 ]).triggerAction({
-    matches: /Added.*/,
-    onInterrupted: function (session) {
+    matches: /Added.*/
+    , onInterrupted: function (session) {
         session.send('Please provide information');
     }
 });
@@ -315,18 +509,39 @@ bot.dialog('/afterItemOrdered', [
 
 
 
-    ,
-    function (session, results) {
+
+
+
+
+
+
+
+
+
+
+    
+    , function (session, results) {
         session.userData.afterItemOrderedyesOrNo = results.response.entity;
         console.log("afterItemOrdered " + results.response.entity);
         if (session.userData.afterItemOrderedyesOrNo == 'No') {
-            session.beginDialog('/orderDeliveryAddress');
+            for (var i in itemsOrdered) {
+                var counter = 0;
+                Store.sendSelectedItemForOrder(itemsOrdered[i].productId, itemsOrdered[i].customerId).then(function (responseValue) {
+                    if (responseValue == 'success') counter += 1;
+                    else session.send("Something went wrong...");
+                    if (counter == itemsOrdered.length) {
+                        session.beginDialog('/orderDeliveryAddress');
+                    }
+                });
+            }
+            //session.beginDialog('/orderDeliveryAddress');
         }
         //session.endDialog();
     }
 ]);
 bot.dialog('/orderDeliveryAddress', [
     function (session) {
+        itemsOrdered = [];
         builder.Prompts.choice(session, 'Okay, would you like order delivered to your home address?', ['Yes', 'No'], {
             listStyle: builder.ListStyle.button
         });
@@ -334,11 +549,14 @@ bot.dialog('/orderDeliveryAddress', [
 
 
 
-    ,
-    function (session, results) {
+    
+    , function (session, results) {
         session.userData.orderDeliveryAddressResponse = results.response.entity;
         console.log("orderDeliveryAddress " + results.response.entity);
         if (session.userData.orderDeliveryAddressResponse == 'Yes') {
+            session.beginDialog('/deliveryType');
+        }
+        else if (session.userData.orderDeliveryAddressResponse == 'No') {
             session.beginDialog('/deliveryType');
         }
         //session.endDialog();
@@ -352,11 +570,13 @@ bot.dialog('/deliveryType', [
     }
 
 
-
-    ,
-    function (session, results) {
+    
+    , function (session, results) {
         session.userData.yesOrNo = results.response.entity;
         if (session.userData.yesOrNo == 'Next Day') {
+            session.beginDialog('/paymentType');
+        }
+        else if (session.userData.yesOrNo == 'Standard') {
             session.beginDialog('/paymentType');
         }
         //session.endDialog();
@@ -370,11 +590,13 @@ bot.dialog('/paymentType', [
     }
 
 
-
-    ,
-    function (session, results) {
+    
+    , function (session, results) {
         session.userData.yesOrNo = results.response.entity;
         if (session.userData.yesOrNo == 'Yes') {
+            session.beginDialog('/confirmDelivery');
+        }
+        else if (session.userData.yesOrNo == 'No') {
             session.beginDialog('/confirmDelivery');
         }
         //session.endDialog();
@@ -382,15 +604,18 @@ bot.dialog('/paymentType', [
 ]);
 bot.dialog('/confirmDelivery', [
     function (session) {
-        builder.Prompts.choice(session, 'Perfect. Can you confirm that you would like to purchase Wrap Front Pencil Skirt Size 14 and Piped Blouse Size 12 on your account today?', ['Yes', 'No'], {
+        var itemsNames = '';
+        for (var i in productArraySelectedForOrder) {
+            itemsNames = itemsNames + ', ' + productArraySelectedForOrder[i]
+        }
+        builder.Prompts.choice(session, 'Perfect. Can you confirm that you would like to purchase ' + itemsNames + ' on your account today?', ['Yes', 'No'], {
             listStyle: builder.ListStyle.button
         });
     }
 
 
-
-    ,
-    function (session, results) {
+    
+    , function (session, results) {
         session.userData.yesOrNo = results.response.entity;
         if (session.userData.yesOrNo == 'Yes') {
             session.beginDialog('/endOrder');
@@ -407,13 +632,13 @@ bot.dialog('/endOrder', [
     }
 
 
-
-    ,
-    function (session, results) {
+    
+    , function (session, results) {
         session.userData.yesOrNo = results.response.entity;
         if (session.userData.yesOrNo == 'No') {
             orderData = [];
             counter = 0;
+            productArraySelectedForOrder = [];
             session.endConversation('Talk to you again soon Alison, goodbye');
         }
         /*session.endDialog();
@@ -424,9 +649,9 @@ bot.send('/deleteprofile');*/
 function getCustomerData() {
     return new Promise(function (resolve) {
         var options = {
-            host: 'lorrainewebservice.azurewebsites.net',
-            path: '/api/getCustomerList',
-            method: 'GET'
+            host: 'lorrainewebservice.azurewebsites.net'
+            , path: '/api/getCustomerList'
+            , method: 'GET'
         };
         var req = http.request(options, function (res) {
             console.log('STATUS: ' + res.statusCode);
@@ -443,6 +668,9 @@ function getCustomerData() {
                     customer.email = customerListJSON[0].email;
                     customer.phone = customerListJSON[0].phone;
                     customer.address = customerListJSON[0].address;
+                    //                    itemsOrdered.push({
+                    //                        customerId: customer.customer_id;
+                    //                    })
                 }
                 //builder.Prompts.number(session, 'Hi ' + customer.name + ', I would be happy to help you.');
                 setTimeout(function () {
@@ -451,11 +679,24 @@ function getCustomerData() {
             });
         });
         req.on('error', function (e) {
-            console.log('problem with request: ' + e.message);
+            console.log('problem with requ  est: ' + e.message);
         });
         // write data to request body
         req.write('data\n');
         req.write('data\n');
         req.end();
     })
+}
+
+function matchReturnItem(list, itemName) {
+    console.log(":) list" + JSON.stringify(list));
+    console.log(":) itemName" + itemName);
+    for (var i in list) {
+        console.log("inside for loop " + i)
+        if (list[i].name == itemName) {
+            console.log("found match")
+            return list[i].productId;
+        }
+    }
+    return 11;
 }
