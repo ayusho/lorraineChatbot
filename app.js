@@ -108,43 +108,6 @@ bot.dialog('returnItem', [
         req.write('data\n');
         req.end();
     }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    
     , function (session, results, next) {
         var startDate = results.response[0];
         var endDate = results.response[1];
@@ -175,7 +138,7 @@ bot.dialog('returnItem', [
 ]).triggerAction({
     matches: 'returnItem'
     , onInterrupted: function (session) {
-        session.send('Please provide information');
+        session.send('Please select one of these items...');
     }
 });
 bot.dialog('/returnReason', [
@@ -187,44 +150,6 @@ bot.dialog('/returnReason', [
         console.log(":) item id" + productIdSelectedForReturn);
         builder.Prompts.text(session, 'Please can you tell me why you are returning ' + productSelectedForReturned[1] + '?');
     }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    
     , function (session, results) {
         console.log(results.response);
         session.userData.returnReason = results.response;
@@ -243,7 +168,7 @@ bot.dialog('/returnReason', [
     }]).triggerAction({
     matches: /^You selected.*/
     , onInterrupted: function (session) {
-        session.send('Please provide information');
+        session.send('Please select one of these...');
     }
 });
 bot.dialog('/returnMethod', [
@@ -252,43 +177,6 @@ bot.dialog('/returnMethod', [
             listStyle: builder.ListStyle.button
         });
     }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    
     , function (session, results) {
         session.userData.returnMethod = results.response.entity;
         session.send('Okay. The nearest Post Office to your delivery address is:');
@@ -315,41 +203,7 @@ bot.dialog('/endReturn', [
         });
     }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    
+ 
     , function (session, results) {
         session.userData.yesOrNo = results.response.entity;
         if (session.userData.yesOrNo == 'No') {
@@ -392,26 +246,13 @@ bot.dialog('orderItem', [
     , onInterrupted: function (session) {
         session.send('Please provide information');
     }
+}).cancelAction('cancelList', "Conversation canceled", {
+    matches: /^cancel/i
+    , confirmPrompt: "Are you sure?"
+}).reloadAction('reloadBuy', "Restarting order.", {
+    matches: /^start over/i
+    , confirmPrompt: "are you sure?"
 });
-/*bot.dialog('/orderLooping', [
-     function (session) {
-        console.log("inside order looping " + session.userData.counterItems);
-
-        console.log("counter item" + session.userData.counterItems);
-        console.log(JSON.stringify(orderData));
-        while (session.userData.counterItems < orderData.length) {
-
-            if (orderData[session.userData.counterItems].itemSize == null) {
-                session.userData.currentOrderData = orderData[session.userData.counterItems];
-                console.log("currentOrderdata: " + JSON.stringify(session.userData.currentOrderData));
-                session.beginDialog('/orderSizeInput', session.userData.currentOrderData);
-                //continue;
-            }
-            session.userData.counterItems++;
-        }
-        session.endDialog();
-    }
-]);*/
 bot.dialog('/orderSizeInput', [
 
     function (session, args, next) {
@@ -426,39 +267,6 @@ bot.dialog('/orderSizeInput', [
         }
     }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    
     , function (session, results) {
         console.log("orderSizeInput function 2" + results.response);
         if (results.response != null) orderData[counter].itemSize = results.response;
@@ -507,18 +315,6 @@ bot.dialog('/afterItemOrdered', [
         });
     }
 
-
-
-
-
-
-
-
-
-
-
-
-
     
     , function (session, results) {
         session.userData.afterItemOrderedyesOrNo = results.response.entity;
@@ -538,7 +334,10 @@ bot.dialog('/afterItemOrdered', [
         }
         //session.endDialog();
     }
-]);
+]).cancelAction('cancelList', "List canceled", {
+    matches: /^cancel/i
+    , confirmPrompt: "Are you sure?"
+});
 bot.dialog('/orderDeliveryAddress', [
     function (session) {
         itemsOrdered = [];
@@ -546,6 +345,12 @@ bot.dialog('/orderDeliveryAddress', [
             listStyle: builder.ListStyle.button
         });
     }
+
+
+
+
+
+
 
 
 
@@ -570,6 +375,12 @@ bot.dialog('/deliveryType', [
     }
 
 
+
+
+
+
+
+
     
     , function (session, results) {
         session.userData.yesOrNo = results.response.entity;
@@ -588,6 +399,12 @@ bot.dialog('/paymentType', [
             listStyle: builder.ListStyle.button
         });
     }
+
+
+
+
+
+
 
 
     
@@ -614,6 +431,12 @@ bot.dialog('/confirmDelivery', [
     }
 
 
+
+
+
+
+
+
     
     , function (session, results) {
         session.userData.yesOrNo = results.response.entity;
@@ -632,6 +455,12 @@ bot.dialog('/endOrder', [
     }
 
 
+
+
+
+
+
+
     
     , function (session, results) {
         session.userData.yesOrNo = results.response.entity;
@@ -645,6 +474,11 @@ bot.dialog('/endOrder', [
 bot.send('/deleteprofile');*/
     }
 ]);
+bot.dialog('/endConversation', function (session) {
+    session.endConversation("Seems like you want to abort the conversation. Thank you.");
+}).triggerAction({
+    matches: /Exit.*/i
+});
 //helper functions
 function getCustomerData() {
     return new Promise(function (resolve) {
