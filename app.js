@@ -173,6 +173,7 @@ bot.dialog('returnItem', [
 
 
 
+
     
     , function (session, results, next) {
         console.log('inside next function ');
@@ -221,7 +222,7 @@ bot.dialog('returnItem', [
             console.log("local json" + JSON.stringify(localItemsList));
             for (var i in localItemsList) {
                 var message = new builder.Message().attachmentLayout(builder.AttachmentLayout.carousel).attachments(localItemsList[i].products.map(function (item) {
-                    return new builder.HeroCard(session).title(item.name).images([new builder.CardImage().url(item.image)]).buttons([builder.CardAction.openUrl(session, item.image, 'View Full Image'), builder.CardAction.postBack(session, ('You selected: ' + item.orderItemId + ',' + item.name), item.name)]);
+                    return new builder.HeroCard(session).title(item.name).images([new builder.CardImage().url(item.image)]).buttons([builder.CardAction.postBack(session, ('You selected: ' + item.orderItemId + ',' + item.name), item.name)]);
                     // .builder.CardAction.postBack(session, item.name, itemAsAttachment.name)
                 }));
                 session.send('These are the products you bought on ' + localItemsList[i].date);
@@ -250,6 +251,7 @@ bot.dialog('/returnReason', [
         console.log(":) item id" + productIdSelectedForReturn);
         builder.Prompts.text(session, 'Please can you tell me why you are returning ' + productSelectedForReturned[1] + '?');
     }
+
 
 
 
@@ -304,6 +306,7 @@ bot.dialog('/returnMethod', [
 
 
 
+
     
     , function (session, results) {
         session.userData.returnMethod = results.response.entity;
@@ -330,6 +333,7 @@ bot.dialog('/endReturn', [
             listStyle: builder.ListStyle.button
         });
     }
+
 
 
 
@@ -536,6 +540,7 @@ bot.dialog('/orderSizeInput', [
 
 
 
+
     
     , function (session, results) {
         console.log("orderSizeInput function 2" + results.response);
@@ -584,6 +589,7 @@ bot.dialog('/afterItemOrdered', [
             listStyle: builder.ListStyle.button
         });
     }
+
 
 
 
@@ -723,6 +729,7 @@ bot.dialog('/deliveryType', [
 
 
 
+
     
     , function (session, results) {
         session.userData.yesOrNo = results.response.entity;
@@ -741,6 +748,7 @@ bot.dialog('/addPreference', [
             listStyle: builder.ListStyle.button
         });
     }
+
 
 
 
@@ -878,6 +886,7 @@ bot.dialog('/confirmUsingPreference', [
 
 
 
+
     
     , function (session, results) {
         session.userData.orderDeliveryAddressResponse = results.response.entity;
@@ -900,6 +909,7 @@ bot.dialog('/confirmDelivery', [
             listStyle: builder.ListStyle.button
         });
     }
+
 
 
 
