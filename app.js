@@ -4,6 +4,7 @@ var Store = require('./store');
 var spellService = require('./spell-service');
 var exec = require('child_process').exec;
 var http = require('http');
+var locationDialog = require('botbuilder-location');
 var child;
 //=========================================================
 // Dummy Data
@@ -42,6 +43,7 @@ server.post('/api/messages', connector.listen());
 var bot = new builder.UniversalBot(connector, function (session) {
     session.send('Sorry, I did not understand \'%s\'. Type \'help\' if you need assistance.', session.message.text);
 });
+bot.library(locationDialog.createLibrary('Ah38A8Y0TcjzjS0XnFRB1I9fTZqGO1m951rYUEPyw0OoTlXweMC4mFjj6I_aWamn'));
 // You can provide your own model by specifing the 'LUIS_MODEL_URL' environment variable
 // This Url can be obtained by uploading or creating your model from the LUIS portal: https://www.luis.ai/
 var recognizer = new builder.LuisRecognizer('https://eastus2.api.cognitive.microsoft.com/luis/v2.0/apps/8f41eeac-f694-43f1-94bf-5a330839b626?subscription-key=632517c4179c4614bc024213023c6025&verbose=true&timezoneOffset=0&q=');
@@ -148,6 +150,27 @@ bot.dialog('returnItem', [
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     
     , function (session, results, next) {
         console.log('inside next function ');
@@ -196,7 +219,7 @@ bot.dialog('returnItem', [
             console.log("local json" + JSON.stringify(localItemsList));
             for (var i in localItemsList) {
                 var message = new builder.Message().attachmentLayout(builder.AttachmentLayout.carousel).attachments(localItemsList[i].products.map(function (item) {
-                    return new builder.HeroCard(session).title(item.name).images([new builder.CardImage().url(item.image)]).buttons([ /*builder.CardAction.imBack(session, ('You selected: ' + item.name), item.name),*/ builder.CardAction.postBack(session, ('You selected: ' + item.orderItemId + ',' + item.name), item.name)]);
+                    return new builder.HeroCard(session).title(item.name).images([new builder.CardImage().url(item.image)]).buttons([builder.CardAction.showImage(session, item.image, 'View Full Image'), builder.CardAction.postBack(session, ('You selected: ' + item.orderItemId + ',' + item.name), item.name), ]).tap([builder.CardAction.showImage(session, item.image)]);
                     // .builder.CardAction.postBack(session, item.name, itemAsAttachment.name)
                 }));
                 session.send('These are the products you bought on ' + localItemsList[i].date);
@@ -225,31 +248,6 @@ bot.dialog('/returnReason', [
         console.log(":) item id" + productIdSelectedForReturn);
         builder.Prompts.text(session, 'Please can you tell me why you are returning ' + productSelectedForReturned[1] + '?');
     }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -300,37 +298,10 @@ bot.dialog('/returnMethod', [
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     
     , function (session, results) {
         session.userData.returnMethod = results.response.entity;
-        session.send('Okay. The nearest Post Office to your delivery address is:');
+        session.send('Okay. The nearest ' + results.response.entity + ' to your delivery address is:');
         session.send('Broadway Post Office\n\n1 Broadway,\n\nWestminster,\n\nLondon SW1H 0AX');
         setTimeout(function () {
             session.beginDialog('/instructions');
@@ -353,6 +324,27 @@ bot.dialog('/endReturn', [
             listStyle: builder.ListStyle.button
         });
     }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -513,6 +505,27 @@ bot.dialog('/orderSizeInput', [
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     
     , function (session, results) {
         console.log("orderSizeInput function 2" + results.response);
@@ -561,6 +574,27 @@ bot.dialog('/afterItemOrdered', [
             listStyle: builder.ListStyle.button
         });
     }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -654,6 +688,27 @@ bot.dialog('/deliveryType', [
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     
     , function (session, results) {
         session.userData.yesOrNo = results.response.entity;
@@ -672,6 +727,27 @@ bot.dialog('/addPreference', [
             listStyle: builder.ListStyle.button
         });
     }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -763,6 +839,27 @@ bot.dialog('/confirmUsingPreference', [
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     
     , function (session, results) {
         session.userData.orderDeliveryAddressResponse = results.response.entity;
@@ -785,6 +882,27 @@ bot.dialog('/confirmDelivery', [
             listStyle: builder.ListStyle.button
         });
     }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -934,4 +1052,9 @@ function matchReturnItem(list, itemName) {
         }
     }
     return 11;
+}
+
+function getFormattedAddressFromPlace(place, separator) {
+    var addressParts = [place.streetAddress, place.locality, place.region, place.postalCode, place.country];
+    return addressParts.filter(i => i).join(separator);
 }
