@@ -38,6 +38,7 @@ var connector = new builder.ChatConnector({
     appId: 'c4d12a93-c875-47ca-9700-28e949ec657a',
     appPassword: 'spZVMeScmRcN7QdP3afw5wE'
 });
+
 server.post('/api/messages', connector.listen());
 var bot = new builder.UniversalBot(connector, function (session) {
     session.send('Sorry, I did not understand \'%s\'. Type \'help\' if you need assistance.', session.message.text);
@@ -46,6 +47,22 @@ var bot = new builder.UniversalBot(connector, function (session) {
 // This Url can be obtained by uploading or creating your model from the LUIS portal: https://www.luis.ai/
 var recognizer = new builder.LuisRecognizer('https://eastus2.api.cognitive.microsoft.com/luis/v2.0/apps/8f41eeac-f694-43f1-94bf-5a330839b626?subscription-key=632517c4179c4614bc024213023c6025&verbose=true&timezoneOffset=0&q=');
 bot.recognizer(recognizer);
+//Log every message
+//const logUserConversation = (event) => {
+//    console.log('message: ' + event.text + ', user: ' + event.address.user.name);
+//};
+//
+//// Middleware for logging
+//bot.use({
+//    receive: function (event, next) {
+//        logUserConversation(event);
+//        next();
+//    },
+//    send: function (event, next) {
+//        logUserConversation(event);
+//        next();
+//    }
+//});
 //=========================================================
 // Bots Dialogs
 //=========================================================
@@ -218,6 +235,7 @@ bot.dialog('/endReturn', [
 //----------------------------------------------orderItem
 bot.dialog('orderItem', [
     function (session, args, next) {
+        var items = '';
         console.log(args.intent.entities);
         var count = 0;
         var size = null;
@@ -226,11 +244,28 @@ bot.dialog('orderItem', [
                 var res = args.intent.entities[i].entity.split(" ");
                 if (res[1] == 'skirt') size = 14;
                 else if (res[1] == 'blouse') size = 12;
+                else if (res[1] == 'top') size = 12;
+                else if (res[1] == 'dress') size = 14;
+                items += res[1] + ' ';
                 orderData.push({
                     itemColor: res[0],
                     itemName: res[1],
                     itemSize: size
-                })
+                });
+            }
+            console.log(args.intent.entities[i].type == 'items' && items.indexOf(args.intent.entities[i].entity) == -1);
+            if (args.intent.entities[i].type == 'items' && items.indexOf(args.intent.entities[i].entity) == -1) {
+                var res = args.intent.entities[i].entity;
+                if (res == 'skirt') size = 14;
+                else if (res == 'blouse') size = 12;
+                else if (res == 'top') size = 12;
+                else if (res == 'dress') size = 14;
+
+                orderData.push({
+                    itemColor: null,
+                    itemName: res,
+                    itemSize: size
+                });
             }
         }
         console.log("orderdata:" + JSON.stringify(orderData));
@@ -259,6 +294,8 @@ bot.dialog('orderItem', [
 bot.dialog('/orderSizeInput', [
 
     function (session, args, next) {
+        console.log(JSON.stringify(orderData));
+        console.log('cungfe : ' + counter);
         if (orderData[counter].itemSize == null) {
             builder.Prompts.number(session, 'What size of ' + orderData[counter].itemColor + ' ' + orderData[counter].itemName + ' would you like to order?');
             console.log("after prompt");
@@ -279,7 +316,7 @@ bot.dialog('/orderSizeInput', [
             // args
             session.send('These are the tailored ' + orderData[counter].itemColor + ' ' + orderData[counter].itemName + ' we have available in size ' + orderData[counter].itemSize);
             var message = new builder.Message().attachmentLayout(builder.AttachmentLayout.carousel).attachments(listOfItemsToOrder.map(function (item) {
-                return new builder.HeroCard(session).title(item.name).images([new builder.CardImage().url(item.image)]).title(item.name).subtitle('€' + item.price).buttons([builder.CardAction.postBack(session, ('Added to Bag ' + item.name + ',' + item.productId), item.name)]);
+                return new builder.HeroCard(session).title(item.name).images([new builder.CardImage().url(item.image)]).title(item.name).subtitle('€' + item.price).buttons([builder.CardAction.postBack(session, ('Added to Bag ' + item.name + ' Size: ' + item.size + ',' + item.productId), item.name)]);
             }));
             session.send(message);
             //session.beginDialog('/afterItemSelected');

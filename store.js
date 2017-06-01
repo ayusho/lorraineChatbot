@@ -56,9 +56,14 @@ module.exports = {
     },
     findOrderItems: function (itemName, itemColor, itemSize) {
         return new Promise(function (resolve) {
+            var pathData = '/api/displayItems?name=' + itemName;
+            if (itemColor != null)
+                pathData += '&color=' + itemColor;
+            if (itemSize != null)
+                pathData += '&size=' + itemSize;
             var options = {
                 host: 'lorrainewebservice.azurewebsites.net',
-                path: '/api/displayItems?name=' + itemName + '&color=' + itemColor + '&size=' + itemSize, //path: '/api/displayItems?name=blouse&color=white&size=12',
+                path: pathData, //path: '/api/displayItems?name=blouse&color=white&size=12',
                 method: 'GET'
             };
             var req = http.request(options, function (res) {
@@ -76,7 +81,8 @@ module.exports = {
                                 name: itemsJSON[i].name,
                                 image: 'https://jdwiilliamsimages.blob.core.windows.net/jd-williams-images/images/' + itemsJSON[i].product_id + '.jpeg',
                                 price: itemsJSON[i].price,
-                                productId: itemsJSON[i].product_id
+                                productId: itemsJSON[i].product_id,
+                                size: itemsJSON[i].size
                             });
                             console.log("http itemname" + itemsJSON[i].name);
                         }
@@ -168,6 +174,38 @@ module.exports = {
             var options = {
                 host: 'lorrainewebservice.azurewebsites.net',
                 path: '/api/addOrderItem?customer_id=' + customerId + '&product_id=' + productId,
+                method: 'GET'
+            };
+            var req = http.request(options, function (res) {
+                console.log('STATUS: ' + res.statusCode);
+                console.log('HEADERS: ' + JSON.stringify(res.headers));
+                res.setEncoding('utf8');
+                res.on('data', function (stdout) {
+                    if (stdout) {
+                        console.log(stdout);
+                        var response = JSON.parse(stdout);
+                        //console.log("http called inside promise---" + itemsJSON[1].NAME);
+                        // complete promise with a timer to simulate async response
+                        setTimeout(function () {
+                            resolve(response.status);
+                        }, 1000);
+                    }
+                });
+            });
+            req.on('error', function (e) {
+                console.log('problem with request: ' + e.message);
+            });
+            // write data to request body
+            req.write('data\n');
+            req.write('data\n');
+            req.end();
+        });
+    },
+    logConversation: function (conversationId, customerId, intent, intentConfidence, userInput, botOutput) {
+        return new Promise(function (resolve) {
+            var options = {
+                host: 'lorrainewebservice.azurewebsites.net',
+                path: '/api/addConversation?conversation_id=' + conversationId + '&customer_id=' + customerId + '&intent=' + intent + '&intent_confidence=' + intentConfidence + '&entity=entites&entity_value=0&entity_confidence=0.3&nodes_visited=0&user_input=' + userInput + '&bot_output=' + botOutput,
                 method: 'GET'
             };
             var req = http.request(options, function (res) {
