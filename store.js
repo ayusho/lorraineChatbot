@@ -3,13 +3,7 @@ var http = require('http');
 var exec = require('child_process').exec;
 var child;
 var itemsJSON;
-var ReviewsOptions = [
-    '“Very stylish, great stay, great staff”'
-    , '“good hotel awful meals”'
-    , '“Need more attention to little things”'
-    , '“Lovely small hotel ideally situated to explore the area.”'
-    , '“Positive surprise”'
-    , '“Beautiful suite and resort”'];
+
 module.exports = {
     findItems: function (customerId, startDate, endDate, itemType) {
         return new Promise(function (resolve) {

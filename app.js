@@ -90,7 +90,7 @@ bot.dialog('returnItem', [
                     customer.phone = customerListJSON[0].phone;
                     customer.address = customerListJSON[0].address;
                 }
-                session.send('Hi ' + session.message.user.name + ', of course. We are processing your request. Please wait for a moment...');
+                session.send('Hi Alison, of course. I\'ll have a look at your order history, just one moment please.');
                 setTimeout(function () {
                     next({
                         response: [startDate, endDate, itemType]
@@ -112,15 +112,15 @@ bot.dialog('returnItem', [
         var startDate = results.response[0];
         var endDate = results.response[1];
         var itemType = results.response[2];
-        console.log(":) " + customer.customer_id + startDate + ' ' + endDate);
+        console.log(":) " + customer.customer_id + startDate + ' ' + endDate + ' ' + itemType);
         // Async search
         Store.findItems(customer.customer_id, startDate, endDate, itemType).then(function (listOfItems) {
             // args
             returnItems = listOfItems;
             if (startDate == null || startDate == undefined || startDate == '') {
-                session.send('I found %d items you bought:', listOfItems.length);
+                session.send('I found %d orders, please select the item from the order that you wish to return:', listOfItems.length);
             } else {
-                session.send('I found %d items you bought on %s:', listOfItems.length, startDate);
+                session.send('I found %d orders from %s, please select the item from the order that you wish to return:', listOfItems.length, startDate);
             }
             var message = new builder.Message().attachmentLayout(builder.AttachmentLayout.carousel).attachments(listOfItems.map(function (item) {
                 return new builder.HeroCard(session).title(item.name).images([new builder.CardImage().url(item.image)]).buttons([ /*builder.CardAction.imBack(session, ('You selected: ' + item.name), item.name),*/ builder.CardAction.postBack(session, ('You selected: ' + item.orderItemId + ',' + item.name), item.name)]);
@@ -145,7 +145,7 @@ bot.dialog('/returnReason', [
     function (session, args) {
         console.log("item list inside returnReason " + JSON.stringify(args));
         productSelectedForReturned = args.intent.matched[0].replace('You selected: ', '').split(',');
-        console.log(":) selected item is " + typeof (productSelectedForReturned));
+        console.log(":) selected item is " + productSelectedForReturned);
         var productIdSelectedForReturn = matchReturnItem(returnItems, productSelectedForReturned[0]);
         console.log(":) item id" + productIdSelectedForReturn);
         builder.Prompts.text(session, 'Please can you tell me why you are returning ' + productSelectedForReturned[1] + '?');
@@ -184,7 +184,7 @@ bot.dialog('/returnMethod', [
         session.send('Broadway Post Office\n\n1 Broadway,\n\nWestminster,\n\nLondon SW1H 0AX');
         setTimeout(function () {
             session.beginDialog('/instructions');
-        }, 2000);
+        }, 4000);
     }
 
 ]);
@@ -194,7 +194,7 @@ bot.dialog('/instructions', [
         session.send('Next, repack the top and the advice note inside so that it is ready for collection.');
         setTimeout(function () {
             session.beginDialog('/endReturn');
-        }, 2000);
+        }, 5000);
     }
 ]);
 bot.dialog('/endReturn', [
@@ -209,6 +209,7 @@ bot.dialog('/endReturn', [
     function (session, results) {
         session.userData.yesOrNo = results.response.entity;
         if (session.userData.yesOrNo == 'No') {
+            //session.message.user.name.split(' ')[0]
             session.send('Okay thanks Alison, goodbye');
         }
         session.endDialog();
@@ -234,7 +235,7 @@ bot.dialog('orderItem', [
         }
         console.log("orderdata:" + JSON.stringify(orderData));
         getCustomerData().then(function () {
-            session.send('Hi ' + session.message.user.name + ', of course. We are processing your request. Please wait for a moment...');
+            session.send('Hi Alison, of course. I\'m happy to help. I\'ll show you what we have available in your size, just one moment please.');
             session.userData.counterItems = 0;
             //session.beginDialog('/orderLooping');
             session.beginDialog('/orderSizeInput');
@@ -321,7 +322,7 @@ bot.dialog('/afterItemOrdered', [
 console.log("afterItemOrdered yes or no " + results.response.entity);*/
         //console.log(results.response.entity == 'No');
         if (results.response.entity == 'No') {
-            session.beginDialog('/orderDeliveryAddress');
+            session.beginDialog('/deliveryType');
             //console.log("customer: " + itemsOrdered[0].customerId);
 
 
@@ -332,67 +333,53 @@ console.log("afterItemOrdered yes or no " + results.response.entity);*/
     matches: /^cancel/i,
     confirmPrompt: "Are you sure?"
 });
-bot.dialog('/orderDeliveryAddress', [
-    function (session) {
 
-        builder.Prompts.choice(session, 'Okay, would you like order delivered to your home address?', ['Yes', 'No'], {
-            listStyle: builder.ListStyle.button
-        });
-    }
-
-
-
-
-
-    ,
-    function (session, results) {
-        session.userData.orderDeliveryAddressResponse = results.response.entity;
-        console.log("orderDeliveryAddress " + results.response.entity);
-        if (session.userData.orderDeliveryAddressResponse == 'Yes') {
-            session.beginDialog('/deliveryType');
-        } else if (session.userData.orderDeliveryAddressResponse == 'No') {
-            session.beginDialog('/deliveryType');
-        }
-        //session.endDialog();
-    }
-]);
 bot.dialog('/deliveryType', [
     function (session) {
         builder.Prompts.choice(session, 'Great and would you like Standard delivery for £3.50 or Next day delivery for £6.50?', ['Standard', 'Next Day'], {
             listStyle: builder.ListStyle.button
         });
-    }
-
-
-
-
-    ,
+    },
     function (session, results) {
         session.userData.yesOrNo = results.response.entity;
         if (session.userData.yesOrNo == 'Next Day') {
-            session.beginDialog('/paymentType');
+            session.beginDialog('/addPreference');
         } else if (session.userData.yesOrNo == 'Standard') {
-            session.beginDialog('/paymentType');
+            session.beginDialog('/addPreference');
         }
         //session.endDialog();
     }
 ]);
-bot.dialog('/paymentType', [
+bot.dialog('/addPreference', [
     function (session) {
-        builder.Prompts.choice(session, 'Excellent, and would you like to pay with your JD Williams Shopping Account?', ['Yes', 'No'], {
+        builder.Prompts.choice(session, 'Would you like me to add that choice to your account preferences Alison?', ['Yes', 'No'], {
             listStyle: builder.ListStyle.button
         });
     }
-
-
-
-
     ,
     function (session, results) {
         session.userData.yesOrNo = results.response.entity;
         if (session.userData.yesOrNo == 'Yes') {
-            session.beginDialog('/confirmDelivery');
+            session.beginDialog('/confirmUsingPreference');
         } else if (session.userData.yesOrNo == 'No') {
+            session.beginDialog('/confirmUsingPreference');
+        }
+        //session.endDialog();
+    }
+]);
+bot.dialog('/confirmUsingPreference', [
+    function (session) {
+
+        builder.Prompts.choice(session, 'Great. I will use your account preferences to complete this order. Is that okay?', ['Yes', 'No'], {
+            listStyle: builder.ListStyle.button
+        });
+    },
+    function (session, results) {
+        session.userData.orderDeliveryAddressResponse = results.response.entity;
+        console.log("orderDeliveryAddress " + results.response.entity);
+        if (session.userData.orderDeliveryAddressResponse == 'Yes') {
+            session.beginDialog('/confirmDelivery');
+        } else if (session.userData.orderDeliveryAddressResponse == 'No') {
             session.beginDialog('/confirmDelivery');
         }
         //session.endDialog();
@@ -409,17 +396,13 @@ bot.dialog('/confirmDelivery', [
             listStyle: builder.ListStyle.button
         });
     }
-
-
-
-
-    ,
+  ,
     function (session, results) {
         session.userData.yesOrNo = results.response.entity;
         if (session.userData.yesOrNo == 'Yes') {
 
             Store.createOrderItemId(itemsOrdered[0].customerId).then(function (responseOrder) {
-                console.log("Inside createorder");
+                console.log("Inside create order");
                 if (responseOrder == 'success') {
                     var counter = 0;
                     for (var i in itemsOrdered) {
@@ -442,25 +425,12 @@ bot.dialog('/confirmDelivery', [
 ]);
 bot.dialog('/endOrder', [
     function (session) {
-        session.send('Your order will be with you tomorrow Alison, I hope you like it. Thank you for shopping with us :)')
-        builder.Prompts.choice(session, 'Is there anything else I can help you with?', ['Yes', 'No'], {
-            listStyle: builder.ListStyle.button
-        });
-    }
+        session.send('Your order will be with you soon Alison, I hope you like it. Thank you for shopping with us :)');
+        orderData = [];
+        counter = 0;
+        productArraySelectedForOrder = [];
+        session.endConversation();
 
-
-
-    ,
-    function (session, results) {
-        session.userData.yesOrNo = results.response.entity;
-        if (session.userData.yesOrNo == 'No') {
-            orderData = [];
-            counter = 0;
-            productArraySelectedForOrder = [];
-            session.endConversation('Talk to you again soon Alison, goodbye');
-        }
-        /*session.endDialog();
-bot.send('/deleteprofile');*/
     }
 ]);
 bot.dialog('/endConversation', function (session) {
@@ -478,6 +448,13 @@ bot.dialog('/endConversation', function (session) {
     session.endConversation("Seems like you want to abort the conversation. Thank you.");
 }).triggerAction({
     matches: /Exit.*/i
+});
+bot.dialog('/greetings', [
+    function (session) {
+        session.send('Hey Alison, how may I help you?');
+    }
+]).triggerAction({
+    matches: 'greetings',
 });
 //helper functions
 function getCustomerData() {
@@ -502,9 +479,9 @@ function getCustomerData() {
                     customer.email = customerListJSON[0].email;
                     customer.phone = customerListJSON[0].phone;
                     customer.address = customerListJSON[0].address;
-                    //                    itemsOrdered.push({
-                    //                        customerId: customer.customer_id;
-                    //                    })
+                    //itemsOrdered.push({
+                    //    customerId: customer.customer_id;
+                    //})
                 }
                 //builder.Prompts.number(session, 'Hi ' + customer.name + ', I would be happy to help you.');
                 setTimeout(function () {
@@ -513,7 +490,7 @@ function getCustomerData() {
             });
         });
         req.on('error', function (e) {
-            console.log('problem with request: ' + e.message);
+            console.log('Problem with request: ' + e.message);
         });
         // write data to request body
         req.write('data\n');
