@@ -124,56 +124,7 @@ bot.dialog('returnItem', [
         req.write('data\n');
         req.end();
     }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    ,
+,
     function (session, results, next) {
         console.log('inside next function ');
         var startDate = results.response[0];
@@ -249,23 +200,7 @@ bot.dialog('/returnReason', [
         console.log(":) item id" + productIdSelectedForReturn);
         builder.Prompts.text(session, 'Please can you tell me why you are returning ' + productSelectedForReturned[1] + '?');
     }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    ,
+  ,
     function (session, results) {
         console.log(results.response);
         session.userData.returnReason = results.response;
@@ -291,22 +226,7 @@ bot.dialog('/returnMethod', [
         builder.Prompts.choice(session, 'Can you select the return method you wish to use', ['Arrange Hermes Courrier', 'Drop at Hermes Parcel Shop', 'Use InPost 24/7 Parcel Locker', 'Drop at Post Office'], {
             listStyle: builder.ListStyle.button
         });
-    }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    ,
+    },
     function (session, results) {
         session.userData.returnMethod = results.response.entity;
         session.send('Okay. The nearest ' + results.response.entity + ' to your delivery address is:');
@@ -332,71 +252,7 @@ bot.dialog('/endReturn', [
             listStyle: builder.ListStyle.button
         });
     }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    ,
+ ,
     function (session, results) {
         session.userData.yesOrNo = results.response.entity;
         if (session.userData.yesOrNo == 'No') {
@@ -478,70 +334,7 @@ bot.dialog('/orderSizeInput', [
             });
         }
     }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    ,
+ ,
     function (session, results) {
         console.log("orderSizeInput function 2" + results.response);
         if (results.response != null) orderData[counter].itemSize = results.response;
@@ -550,7 +343,7 @@ bot.dialog('/orderSizeInput', [
             // args
             session.send('These are the tailored ' + orderData[counter].itemColor + ' ' + orderData[counter].itemName + ' we have available in size ' + orderData[counter].itemSize);
             var message = new builder.Message().attachmentLayout(builder.AttachmentLayout.carousel).attachments(listOfItemsToOrder.map(function (item) {
-                return new builder.HeroCard(session).title(item.name).images([new builder.CardImage().url(item.image)]).title(item.name).subtitle('€' + item.price).buttons([builder.CardAction.postBack(session, ('Added to Bag ' + item.name + ' Size: ' + item.size + ',' + item.productId), item.name)]);
+                return new builder.HeroCard(session).title(item.name).images([new builder.CardImage().url(item.image)]).title(item.name).subtitle('€' + item.price).buttons([builder.CardAction.openUrl(session, item.image, 'View Full image'), builder.CardAction.postBack(session, ('Added to Bag ' + item.name + ' Size: ' + item.size + ',' + item.productId), item.name)]);
             }));
             session.send(message);
             //session.beginDialog('/afterItemSelected');
@@ -587,69 +380,7 @@ bot.dialog('/afterItemOrdered', [
         builder.Prompts.choice(session, 'Wonderful, you deserve it! Would you like to order anything else today?', ['Yes', 'No'], {
             listStyle: builder.ListStyle.button
         });
-    }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    ,
+    },
     function (session, results) {
         /*session.userData.afterItemOrderedyesOrNo = results.response.entity;
 console.log("afterItemOrdered yes or no " + results.response.entity);*/
@@ -669,69 +400,7 @@ bot.dialog('/deliveryType', [
         builder.Prompts.choice(session, 'Great and would you like Standard delivery for £3.50 or Next day delivery for £6.50?', ['Standard', 'Next Day'], {
             listStyle: builder.ListStyle.button
         });
-    }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    ,
+    },
     function (session, results) {
         session.userData.yesOrNo = results.response.entity;
         if (session.userData.yesOrNo == 'Next Day') {
@@ -747,70 +416,7 @@ bot.dialog('/addPreference', [
         builder.Prompts.choice(session, 'Would you like me to add that choice to your account preferences Alison?', ['Yes', 'No'], {
             listStyle: builder.ListStyle.button
         });
-    }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    ,
+    },
     function (session, results) {
         session.userData.yesOrNo = results.response.entity;
         if (session.userData.yesOrNo == 'Yes') {
@@ -827,66 +433,6 @@ bot.dialog('/confirmUsingPreference', [
             listStyle: builder.ListStyle.button
         });
     }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
     ,
     function (session, results) {
@@ -909,69 +455,7 @@ bot.dialog('/confirmDelivery', [
             listStyle: builder.ListStyle.button
         });
     }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    ,
+ ,
     function (session, results) {
         session.userData.yesOrNo = results.response.entity;
         if (session.userData.yesOrNo == 'Yes') {
