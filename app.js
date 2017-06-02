@@ -230,7 +230,20 @@ bot.dialog('/returnMethod', [
     function (session, results) {
         session.userData.returnMethod = results.response.entity;
         session.send('Okay. The nearest ' + results.response.entity + ' to your delivery address is:');
-        session.send('Broadway Post Office\n\n1 Broadway,\n\nWestminster,\n\nLondon SW1H 0AX');
+        var card = new builder.HeroCard(session)
+            .text('Broadway Post Office\n\n1 Broadway,\n\nWestminster,\n\nLondon SW1H 0AX')
+            .images([
+            builder.CardImage.create(session, 'https://jdwiilliamsimages.blob.core.windows.net/jd-williams-images/images/Map.jpeg')
+        ])
+            .buttons([
+            builder.CardAction.openUrl(session, 'https://www.google.co.in/maps/dir/Holborn,+London,+UK/Broadway+Post+Office,+1+Broadway,+Westminster,+London+SW1H+0AX,+UK/@51.5075558,-0.1317768,15z/am=t/data=!4m14!4m13!1m5!1m1!1s0x48761b3576dabf03:0x2c0ed4d68c673fd!2m2!1d-0.1184757!2d51.5172619!1m5!1m1!1s0x487604dc0d972871:0xe20ac904e79dc033!2m2!1d-0.1339724!2d51.4984833!3e0', 'View Location')
+        ]);
+
+        // attach the card to the reply message
+        var msg = new builder.Message(session).addAttachment(card);
+        session.send(msg);
+
+        //        session.send('Broadway Post Office\n\n1 Broadway,\n\nWestminster,\n\nLondon SW1H 0AX');
         setTimeout(function () {
             session.beginDialog('/instructions');
         }, 4000);
@@ -341,7 +354,10 @@ bot.dialog('/orderSizeInput', [
         //session.userData.selectedItems = [];
         Store.findOrderItems(orderData[counter].itemName, orderData[counter].itemColor, orderData[counter].itemSize).then(function (listOfItemsToOrder) {
             // args
-            session.send('These are the tailored ' + orderData[counter].itemColor + ' ' + orderData[counter].itemName + ' we have available in size ' + orderData[counter].itemSize);
+            if (orderData[counter].itemColor != null)
+                session.send('These are the tailored ' + orderData[counter].itemColor + ' ' + orderData[counter].itemName + ' we have available in size ' + orderData[counter].itemSize);
+            else
+                session.send('These are the tailored ' + orderData[counter].itemName + ' we have available in size ' + orderData[counter].itemSize);
             var message = new builder.Message().attachmentLayout(builder.AttachmentLayout.carousel).attachments(listOfItemsToOrder.map(function (item) {
                 return new builder.HeroCard(session).title(item.name).images([new builder.CardImage().url(item.image)]).title(item.name).subtitle('€' + item.price).buttons([builder.CardAction.openUrl(session, item.image, 'View Full image'), builder.CardAction.postBack(session, ('Added to Bag ' + item.name + ' Size: ' + item.size + ',' + item.productId), item.name)]);
             }));
