@@ -11,11 +11,11 @@ var child;
 //=========================================================
 var customer = [
     {
-        customer_id: ''
-        , name: ''
-        , email: ''
-        , phone: ''
-        , address: ''
+        customer_id: '',
+        name: '',
+        email: '',
+        phone: '',
+        address: ''
     }
 ];
 var customerListJSON;
@@ -36,8 +36,8 @@ server.listen(process.env.port || process.env.PORT || 3978, function () {
 });
 // Create chat bot
 var connector = new builder.ChatConnector({
-    appId: 'c4d12a93-c875-47ca-9700-28e949ec657a'
-    , appPassword: 'spZVMeScmRcN7QdP3afw5wE'
+    appId: 'c4d12a93-c875-47ca-9700-28e949ec657a',
+    appPassword: 'spZVMeScmRcN7QdP3afw5wE'
 });
 server.post('/api/messages', connector.listen());
 var bot = new builder.UniversalBot(connector, function (session) {
@@ -77,22 +77,20 @@ bot.dialog('returnItem', [
                 if (args.intent.entities[i].resolution.values[0].type == 'date') {
                     startDate = args.intent.entities[i].resolution.values[0].value;
                     endDate = null;
-                }
-                else /*if (args.intent.entities[i].resolution.values[0].type == 'daterange') */ {
+                } else /*if (args.intent.entities[i].resolution.values[0].type == 'daterange') */ {
                     console.log("inside daterange");
                     startDate = args.intent.entities[i].resolution.values[0].start;
                     endDate = args.intent.entities[i].resolution.values[0].end;
                 }
-            }
-            else if (args.intent.entities[i].type == 'items') itemType = args.intent.entities[i].resolution.values[0];
+            } else if (args.intent.entities[i].type == 'items') itemType = args.intent.entities[i].resolution.values[0];
         }
         console.log("start date : " + startDate);
         console.log("end date : " + endDate);
         console.log("item : " + itemType);
         var options = {
-            host: 'lorrainewebservice.azurewebsites.net'
-            , path: '/api/getCustomerList'
-            , method: 'GET'
+            host: 'lorrainewebservice.azurewebsites.net',
+            path: '/api/getCustomerList',
+            method: 'GET'
         };
         var req = http.request(options, function (res) {
             console.log('STATUS: ' + res.statusCode);
@@ -174,8 +172,9 @@ bot.dialog('returnItem', [
 
 
 
-    
-    , function (session, results, next) {
+
+    ,
+    function (session, results, next) {
         console.log('inside next function ');
         var startDate = results.response[0];
         var endDate = results.response[1];
@@ -197,24 +196,23 @@ bot.dialog('returnItem', [
             });
             if (startDate == null || startDate == undefined || startDate == '') {
                 session.send('I found %d orders, please select the item from the order that you wish to return:', listOfItems.length);
-            }
-            else {
+            } else {
                 session.send('I found %d orders from %s, please select the item from the order that you wish to return:', listOfItems.length, startDate);
             }
             for (var i in commonDates) {
                 localItemsList.push({
-                    date: commonDates[i]
-                    , products: []
+                    date: commonDates[i],
+                    products: []
                 });
             }
             for (var i in localItemsList) {
                 for (var j in listOfItems) {
                     if (listOfItems[j].timestamp.includes(localItemsList[i].date)) {
                         localItemsList[i].products.push({
-                            name: listOfItems[j].name
-                            , image: listOfItems[j].image
-                            , productId: listOfItems[j].productId
-                            , orderItemId: listOfItems[j].orderItemId
+                            name: listOfItems[j].name,
+                            image: listOfItems[j].image,
+                            productId: listOfItems[j].productId,
+                            orderItemId: listOfItems[j].orderItemId
                         });
                     }
                 }
@@ -222,7 +220,7 @@ bot.dialog('returnItem', [
             console.log("local json" + JSON.stringify(localItemsList));
             for (var i in localItemsList) {
                 var message = new builder.Message().attachmentLayout(builder.AttachmentLayout.carousel).attachments(localItemsList[i].products.map(function (item) {
-                    return new builder.HeroCard(session).title(item.name).images([new builder.CardImage().url(item.image)]).buttons([builder.CardAction.postBack(session, ('You selected: ' + item.orderItemId + ',' + item.name), item.name)]);
+                    return new builder.HeroCard(session).title(item.name).images([new builder.CardImage().url(item.image)]).buttons([builder.CardAction.openUrl(session, item.image, 'View Full image'), builder.CardAction.postBack(session, ('You selected: ' + item.orderItemId + ',' + item.name), item.name)]);
                     // .builder.CardAction.postBack(session, item.name, itemAsAttachment.name)
                 }));
                 session.send('These are the products you bought on ' + localItemsList[i].date);
@@ -237,8 +235,8 @@ bot.dialog('returnItem', [
     },
 
 ]).triggerAction({
-    matches: 'returnItem'
-    , onInterrupted: function (session) {
+    matches: 'returnItem',
+    onInterrupted: function (session) {
         session.send('Please select one of these items...');
     }
 });
@@ -266,8 +264,9 @@ bot.dialog('/returnReason', [
 
 
 
-    
-    , function (session, results) {
+
+    ,
+    function (session, results) {
         console.log(results.response);
         session.userData.returnReason = results.response;
         console.log("reason" + results.response + ' ' + productSelectedForReturned[0]);
@@ -277,14 +276,13 @@ bot.dialog('/returnReason', [
                 setTimeout(function () {
                     session.beginDialog('/returnMethod');
                 }, 1000);
-            }
-            else {
+            } else {
                 session.send("Some problem occurred while processing...");
             }
         })
     }]).triggerAction({
-    matches: /^You selected.*/
-    , onInterrupted: function (session) {
+    matches: /^You selected.*/,
+    onInterrupted: function (session) {
         session.send('Please select one of these...');
     }
 });
@@ -307,8 +305,9 @@ bot.dialog('/returnMethod', [
 
 
 
-    
-    , function (session, results) {
+
+    ,
+    function (session, results) {
         session.userData.returnMethod = results.response.entity;
         session.send('Okay. The nearest ' + results.response.entity + ' to your delivery address is:');
         session.send('Broadway Post Office\n\n1 Broadway,\n\nWestminster,\n\nLondon SW1H 0AX');
@@ -396,8 +395,9 @@ bot.dialog('/endReturn', [
 
 
 
-    
-    , function (session, results) {
+
+    ,
+    function (session, results) {
         session.userData.yesOrNo = results.response.entity;
         if (session.userData.yesOrNo == 'No') {
             //session.message.user.name.split(' ')[0]
@@ -422,9 +422,9 @@ bot.dialog('orderItem', [
                 else if (res[1] == 'dress') size = 14;
                 items += res[1] + ' ';
                 orderData.push({
-                    itemColor: res[0]
-                    , itemName: res[1]
-                    , itemSize: size
+                    itemColor: res[0],
+                    itemName: res[1],
+                    itemSize: size
                 });
             }
             console.log(args.intent.entities[i].type == 'items' && items.indexOf(args.intent.entities[i].entity) == -1);
@@ -435,9 +435,9 @@ bot.dialog('orderItem', [
                 else if (res == 'top') size = 12;
                 else if (res == 'dress') size = 14;
                 orderData.push({
-                    itemColor: null
-                    , itemName: res
-                    , itemSize: size
+                    itemColor: null,
+                    itemName: res,
+                    itemSize: size
                 });
             }
         }
@@ -453,16 +453,16 @@ bot.dialog('orderItem', [
 
 
 ]).triggerAction({
-    matches: 'orderItem'
-    , onInterrupted: function (session) {
+    matches: 'orderItem',
+    onInterrupted: function (session) {
         session.send('Please provide information');
     }
 }).cancelAction('cancelList', "Conversation canceled", {
-    matches: /^cancel/i
-    , confirmPrompt: "Are you sure?"
+    matches: /^cancel/i,
+    confirmPrompt: "Are you sure?"
 }).reloadAction('reloadBuy', "Restarting order.", {
-    matches: /^start over/i
-    , confirmPrompt: "are you sure?"
+    matches: /^start over/i,
+    confirmPrompt: "are you sure?"
 });
 bot.dialog('/orderSizeInput', [
 
@@ -472,8 +472,7 @@ bot.dialog('/orderSizeInput', [
         if (orderData[counter].itemSize == null) {
             builder.Prompts.number(session, 'What size of ' + orderData[counter].itemColor + ' ' + orderData[counter].itemName + ' would you like to order?');
             console.log("after prompt");
-        }
-        else {
+        } else {
             next({
                 response: null
             });
@@ -541,8 +540,9 @@ bot.dialog('/orderSizeInput', [
 
 
 
-    
-    , function (session, results) {
+
+    ,
+    function (session, results) {
         console.log("orderSizeInput function 2" + results.response);
         if (results.response != null) orderData[counter].itemSize = results.response;
         //session.userData.selectedItems = [];
@@ -565,21 +565,20 @@ bot.dialog('/afterItemSelected', [
         console.log("ordered item is :)" + productSelectedForOrder[0] + "and " + productSelectedForOrder[1]);
         productArraySelectedForOrder.push(productSelectedForOrder[0]);
         itemsOrdered.push({
-            productId: productSelectedForOrder[1]
-            , customerId: customer.customer_id
+            productId: productSelectedForOrder[1],
+            customerId: customer.customer_id
         });
         console.log("items ordered: " + JSON.stringify(itemsOrdered));
         counter = counter + 1;
         if (counter < orderData.length) {
             session.send('That\'s lovely, great choice');
             session.beginDialog('/orderSizeInput');
-        }
-        else session.beginDialog('/afterItemOrdered');
+        } else session.beginDialog('/afterItemOrdered');
         //session.endDialog();
     }
 ]).triggerAction({
-    matches: /Added.*/
-    , onInterrupted: function (session) {
+    matches: /Added.*/,
+    onInterrupted: function (session) {
         session.send('Please provide information');
     }
 });
@@ -649,8 +648,9 @@ bot.dialog('/afterItemOrdered', [
 
 
 
-    
-    , function (session, results) {
+
+    ,
+    function (session, results) {
         /*session.userData.afterItemOrderedyesOrNo = results.response.entity;
 console.log("afterItemOrdered yes or no " + results.response.entity);*/
         //console.log(results.response.entity == 'No');
@@ -661,8 +661,8 @@ console.log("afterItemOrdered yes or no " + results.response.entity);*/
         }
         //session.endDialog();
 }]).cancelAction('cancelList', "Action canceled", {
-    matches: /^cancel/i
-    , confirmPrompt: "Are you sure?"
+    matches: /^cancel/i,
+    confirmPrompt: "Are you sure?"
 });
 bot.dialog('/deliveryType', [
     function (session) {
@@ -730,13 +730,13 @@ bot.dialog('/deliveryType', [
 
 
 
-    
-    , function (session, results) {
+
+    ,
+    function (session, results) {
         session.userData.yesOrNo = results.response.entity;
         if (session.userData.yesOrNo == 'Next Day') {
             session.beginDialog('/addPreference');
-        }
-        else if (session.userData.yesOrNo == 'Standard') {
+        } else if (session.userData.yesOrNo == 'Standard') {
             session.beginDialog('/addPreference');
         }
         //session.endDialog();
@@ -809,13 +809,13 @@ bot.dialog('/addPreference', [
 
 
 
-    
-    , function (session, results) {
+
+    ,
+    function (session, results) {
         session.userData.yesOrNo = results.response.entity;
         if (session.userData.yesOrNo == 'Yes') {
             session.beginDialog('/confirmUsingPreference');
-        }
-        else if (session.userData.yesOrNo == 'No') {
+        } else if (session.userData.yesOrNo == 'No') {
             session.beginDialog('/confirmUsingPreference');
         }
         //session.endDialog();
@@ -887,14 +887,14 @@ bot.dialog('/confirmUsingPreference', [
 
 
 
-    
-    , function (session, results) {
+
+    ,
+    function (session, results) {
         session.userData.orderDeliveryAddressResponse = results.response.entity;
         console.log("orderDeliveryAddress " + results.response.entity);
         if (session.userData.orderDeliveryAddressResponse == 'Yes') {
             session.beginDialog('/confirmDelivery');
-        }
-        else if (session.userData.orderDeliveryAddressResponse == 'No') {
+        } else if (session.userData.orderDeliveryAddressResponse == 'No') {
             session.beginDialog('/confirmDelivery');
         }
         //session.endDialog();
@@ -970,8 +970,9 @@ bot.dialog('/confirmDelivery', [
 
 
 
-    
-    , function (session, results) {
+
+    ,
+    function (session, results) {
         session.userData.yesOrNo = results.response.entity;
         if (session.userData.yesOrNo == 'Yes') {
             Store.createOrderItemId(itemsOrdered[0].customerId).then(function (responseOrder) {
@@ -989,8 +990,7 @@ bot.dialog('/confirmDelivery', [
                             }
                         });
                     }
-                }
-                else session.send("Something went wrong...");
+                } else session.send("Something went wrong...");
             })
         }
         //session.endDialog();
@@ -1026,15 +1026,15 @@ bot.dialog('/greetings', [
         session.send('Hey Alison, how may I help you?');
     }
 ]).triggerAction({
-    matches: 'greetings'
-, });
+    matches: 'greetings',
+});
 //helper functions
 function getCustomerData() {
     return new Promise(function (resolve) {
         var options = {
-            host: 'lorrainewebservice.azurewebsites.net'
-            , path: '/api/getCustomerList'
-            , method: 'GET'
+            host: 'lorrainewebservice.azurewebsites.net',
+            path: '/api/getCustomerList',
+            method: 'GET'
         };
         var req = http.request(options, function (res) {
             console.log('STATUS: ' + res.statusCode);
