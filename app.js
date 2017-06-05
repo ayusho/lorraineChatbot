@@ -87,6 +87,7 @@ bot.dialog('returnItem', [
         console.log("start date : " + startDate);
         console.log("end date : " + endDate);
         console.log("item : " + itemType);
+
         var options = {
             host: 'lorrainewebservice.azurewebsites.net',
             path: '/api/getCustomerList',
@@ -171,7 +172,7 @@ bot.dialog('returnItem', [
             console.log("local json" + JSON.stringify(localItemsList));
             for (var i in localItemsList) {
                 var message = new builder.Message().attachmentLayout(builder.AttachmentLayout.carousel).attachments(localItemsList[i].products.map(function (item) {
-                    return new builder.HeroCard(session).title(item.name).images([new builder.CardImage().url(item.image)]).buttons([builder.CardAction.openUrl(session, item.image, 'View Full image'), builder.CardAction.postBack(session, ('You selected: ' + item.orderItemId + ',' + item.name), item.name)]);
+                    return new builder.HeroCard(session).title(item.name).images([new builder.CardImage().url(item.image)]).buttons([builder.CardAction.openUrl(session, item.image, 'Enlarge Image'), builder.CardAction.postBack(session, ('You selected: ' + item.orderItemId + ',' + item.name), item.name)]);
                     // .builder.CardAction.postBack(session, item.name, itemAsAttachment.name)
                 }));
                 session.send('These are the products you bought on ' + localItemsList[i].date);
@@ -270,7 +271,10 @@ bot.dialog('/endReturn', [
         session.userData.yesOrNo = results.response.entity;
         if (session.userData.yesOrNo == 'No') {
             //session.message.user.name.split(' ')[0]
-            session.send('Okay thanks Alison, goodbye');
+            session.endConversation("Okay thanks Alison, goodbye.")
+            //session.send('Okay thanks Alison, goodbye');
+        } else {
+            session.send('What would you like to do?');
         }
         session.endDialog();
     }
@@ -359,7 +363,7 @@ bot.dialog('/orderSizeInput', [
             else
                 session.send('These are the tailored ' + orderData[counter].itemName + ' we have available in size ' + orderData[counter].itemSize);
             var message = new builder.Message().attachmentLayout(builder.AttachmentLayout.carousel).attachments(listOfItemsToOrder.map(function (item) {
-                return new builder.HeroCard(session).title(item.name).images([new builder.CardImage().url(item.image)]).title(item.name).subtitle('€' + item.price).buttons([builder.CardAction.openUrl(session, item.image, 'View Full image'), builder.CardAction.postBack(session, ('Added to Bag ' + item.name + ' Size: ' + item.size + ',' + item.productId), item.name)]);
+                return new builder.HeroCard(session).title(item.name).images([new builder.CardImage().url(item.image)]).title(item.name).subtitle('€' + item.price).buttons([builder.CardAction.openUrl(session, item.image, 'Enlarge Image'), builder.CardAction.postBack(session, ('Added to Bag ' + item.name + ' Size: ' + item.size + ',' + item.productId), 'Buy ' + item.name)]);
             }));
             session.send(message);
             //session.beginDialog('/afterItemSelected');
@@ -405,6 +409,10 @@ console.log("afterItemOrdered yes or no " + results.response.entity);*/
             session.beginDialog('/deliveryType');
             //console.log("customer: " + itemsOrdered[0].customerId);
             //session.beginDialog('/orderDeliveryAddress');
+        } else {
+            session.send('What would you like to do?');
+            session.endDialog();
+            //session.beginDialog('/orderSizeInput');
         }
         //session.endDialog();
 }]).cancelAction('cancelList', "Action canceled", {
@@ -492,8 +500,14 @@ bot.dialog('/confirmDelivery', [
                     }
                 } else session.send("Something went wrong...");
             })
+        } else {
+            orderData = [];
+            counter = 0;
+            productArraySelectedForOrder = [];
+            itemsOrdered = [];
+            session.endConversation('You just cancelled your order. Thanks for shopping with us.');
         }
-        //session.endDialog();
+        session.endDialog();
     }
 ]);
 bot.dialog('/endOrder', [
@@ -502,6 +516,7 @@ bot.dialog('/endOrder', [
         orderData = [];
         counter = 0;
         productArraySelectedForOrder = [];
+        itemsOrdered = [];
         session.endConversation();
     }
 ]);
