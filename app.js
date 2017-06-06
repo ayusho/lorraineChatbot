@@ -41,7 +41,7 @@ var connector = new builder.ChatConnector({
 });
 server.post('/api/messages', connector.listen());
 var bot = new builder.UniversalBot(connector, function (session) {
-    session.send('Sorry, I did not understand \'%s\'. Type \'help\' if you need assistance.', session.message.text);
+    session.send('I didn\'t get that. Can you say it again?');
 });
 bot.library(locationDialog.createLibrary('Ah38A8Y0TcjzjS0XnFRB1I9fTZqGO1m951rYUEPyw0OoTlXweMC4mFjj6I_aWamn'));
 // You can provide your own model by specifing the 'LUIS_MODEL_URL' environment variable
@@ -109,7 +109,7 @@ bot.dialog('returnItem', [
                     customer.phone = customerListJSON[0].phone;
                     customer.address = customerListJSON[0].address;
                 }
-                session.send('Hi Alison, of course. I\'ll have a look at your order history, just one moment please.');
+                session.send('Alison, of course. I\'ll have a look at your order history, just one moment please.');
                 setTimeout(function () {
                     next({
                         response: [startDate, endDate, itemType]
@@ -146,11 +146,12 @@ bot.dialog('returnItem', [
             var commonDates = localItemsDate.filter(function (item, index, inputArray) {
                 return inputArray.indexOf(item) == index;
             });
-            if (startDate == null || startDate == undefined || startDate == '') {
-                session.send('I found %d orders, please select the item from the order that you wish to return:', listOfItems.length);
-            } else {
-                session.send('I found %d orders from %s, please select the item from the order that you wish to return:', listOfItems.length, startDate);
-            }
+            //            if (startDate == null || startDate == undefined || startDate == '') {
+            //                session.send('I found %d orders, please select the item from the order that you wish to return:', listOfItems.length);
+            //            } else {
+            //                session.send('I found %d orders from %s, please select the item from the order that you wish to return:', listOfItems.length, startDate);
+            //            }
+
             for (var i in commonDates) {
                 localItemsList.push({
                     date: commonDates[i],
@@ -169,13 +170,14 @@ bot.dialog('returnItem', [
                     }
                 }
             }
+            session.send('I found %d orders, please select the item from the order that you wish to return:', localItemsList.length);
             console.log("local json" + JSON.stringify(localItemsList));
             for (var i in localItemsList) {
+                session.send('These are the products you bought on ' + localItemsList[i].date);
                 var message = new builder.Message().attachmentLayout(builder.AttachmentLayout.carousel).attachments(localItemsList[i].products.map(function (item) {
                     return new builder.HeroCard(session).title(item.name).images([new builder.CardImage().url(item.image)]).buttons([builder.CardAction.openUrl(session, item.image, 'Enlarge Image'), builder.CardAction.postBack(session, ('You selected: ' + item.orderItemId + ',' + item.name), item.name)]);
                     // .builder.CardAction.postBack(session, item.name, itemAsAttachment.name)
                 }));
-                session.send('These are the products you bought on ' + localItemsList[i].date);
                 session.send(message);
             }
             //session.send(selectedItem);
@@ -269,6 +271,7 @@ bot.dialog('/endReturn', [
  ,
     function (session, results) {
         session.userData.yesOrNo = results.response.entity;
+        reinitializeVariables();
         if (session.userData.yesOrNo == 'No') {
             //session.message.user.name.split(' ')[0]
             session.endConversation("Okay thanks Alison, goodbye.")
@@ -293,6 +296,7 @@ bot.dialog('orderItem', [
                 else if (res[1] == 'blouse') size = 12;
                 else if (res[1] == 'top') size = 12;
                 else if (res[1] == 'dress') size = 14;
+                else size = null;
                 items += res[1] + ' ';
                 orderData.push({
                     itemColor: res[0],
@@ -314,9 +318,12 @@ bot.dialog('orderItem', [
                 });
             }
         }
+        //        if (orderData == null) {
+        //            session.endConversation('We don\'t hsve these product' );
+        //        }
         console.log("orderdata:" + JSON.stringify(orderData));
         getCustomerData().then(function () {
-            session.send('Hi Alison, of course. I\'m happy to help. I\'ll show you what we have available in your size, just one moment please.');
+            session.send('Alison, of course. I\'m happy to help. I\'ll show you what we have available in your size, just one moment please.');
             session.userData.counterItems = 0;
             //session.beginDialog('/orderLooping');
             session.beginDialog('/orderSizeInput');
@@ -343,7 +350,10 @@ bot.dialog('/orderSizeInput', [
         console.log(JSON.stringify(orderData));
         console.log('cungfe : ' + counter);
         if (orderData[counter].itemSize == null) {
-            builder.Prompts.number(session, 'What size of ' + orderData[counter].itemColor + ' ' + orderData[counter].itemName + ' would you like to order?');
+            if (orderData[counter].itemColor != null)
+                builder.Prompts.number(session, 'What size of ' + orderData[counter].itemColor + ' ' + orderData[counter].itemName + ' would you like to order?');
+            else
+                builder.Prompts.number(session, 'What size of ' + orderData[counter].itemName + ' would you like to order?');
             console.log("after prompt");
         } else {
             next({
@@ -358,12 +368,17 @@ bot.dialog('/orderSizeInput', [
         //session.userData.selectedItems = [];
         Store.findOrderItems(orderData[counter].itemName, orderData[counter].itemColor, orderData[counter].itemSize).then(function (listOfItemsToOrder) {
             // args
-            if (orderData[counter].itemColor != null)
-                session.send('These are the tailored ' + orderData[counter].itemColor + ' ' + orderData[counter].itemName + ' we have available in size ' + orderData[counter].itemSize);
+            if (listOfItemsToOrder.length == 0) {
+                session.send('I did not find any product based on your search. How else can I help you?');
+                reinitializeVariables();
+                session.endConversation();
+
+            } else if (orderData[counter].itemColor != null)
+                session.send('These are the ' + orderData[counter].itemColor + ' ' + orderData[counter].itemName + ' we have available in size ' + orderData[counter].itemSize);
             else
-                session.send('These are the tailored ' + orderData[counter].itemName + ' we have available in size ' + orderData[counter].itemSize);
+                session.send('These are the ' + orderData[counter].itemName + ' we have available in size ' + orderData[counter].itemSize);
             var message = new builder.Message().attachmentLayout(builder.AttachmentLayout.carousel).attachments(listOfItemsToOrder.map(function (item) {
-                return new builder.HeroCard(session).title(item.name).images([new builder.CardImage().url(item.image)]).title(item.name).subtitle('€' + item.price).buttons([builder.CardAction.openUrl(session, item.image, 'Enlarge Image'), builder.CardAction.postBack(session, ('Added to Bag ' + item.name + ' Size: ' + item.size + ',' + item.productId), 'Buy ' + item.name)]);
+                return new builder.HeroCard(session).title(item.name).images([new builder.CardImage().url(item.image)]).title(item.name).subtitle('£' + item.price).buttons([builder.CardAction.openUrl(session, item.image, 'Enlarge Image'), builder.CardAction.postBack(session, ('Added to Bag ' + item.name + ' Size ' + item.size + ' Price £' + item.price + ',' + item.productId), 'Buy ' + item.name)]);
             }));
             session.send(message);
             //session.beginDialog('/afterItemSelected');
@@ -501,10 +516,7 @@ bot.dialog('/confirmDelivery', [
                 } else session.send("Something went wrong...");
             })
         } else {
-            orderData = [];
-            counter = 0;
-            productArraySelectedForOrder = [];
-            itemsOrdered = [];
+            reinitializeVariables();
             session.endConversation('You just cancelled your order. Thanks for shopping with us.');
         }
         session.endDialog();
@@ -513,25 +525,12 @@ bot.dialog('/confirmDelivery', [
 bot.dialog('/endOrder', [
     function (session) {
         session.send('Your order will be with you soon Alison, I hope you like it. Thank you for shopping with us :)');
-        orderData = [];
-        counter = 0;
-        productArraySelectedForOrder = [];
-        itemsOrdered = [];
+        reinitializeVariables();
         session.endConversation();
     }
 ]);
 bot.dialog('/endConversation', function (session) {
-    orderData = [];
-    counter = 0;
-    customer = [];
-    customerListJSON = [];
-    returnItems = [];
-    productSelectedForReturned = [];
-    productSelectedForOrder = [];
-    productArraySelectedForOrder = [];
-    itemsOrdered = [];
-    orderData = [];
-    counter = 0;
+    reinitializeVariables();
     session.endConversation("Seems like you want to abort the conversation. Thank you.");
 }).triggerAction({
     matches: /Exit.*/i
@@ -602,4 +601,18 @@ function matchReturnItem(list, itemName) {
 function getFormattedAddressFromPlace(place, separator) {
     var addressParts = [place.streetAddress, place.locality, place.region, place.postalCode, place.country];
     return addressParts.filter(i => i).join(separator);
+}
+
+function reinitializeVariables() {
+    orderData = [];
+    counter = 0;
+    customer = [];
+    customerListJSON = [];
+    returnItems = [];
+    productSelectedForReturned = [];
+    productSelectedForOrder = [];
+    productArraySelectedForOrder = [];
+    itemsOrdered = [];
+    orderData = [];
+    counter = 0;
 }

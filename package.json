@@ -17,6 +17,7 @@
   },
   "homepage": "https://github.com/ayusho/lorraineChatbot#readme",
   "dependencies": {
+    "api-ai-recognizer": "^1.1.1",
     "botbuilder": "^3.8.2",
     "botbuilder-location": "^2.0.0",
     "restify": "^4.3.0"
