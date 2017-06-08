@@ -208,7 +208,7 @@ bot.dialog('/returnReason', [
         console.log("reason" + results.response + ' ' + productSelectedForReturned[0]);
         Store.sendSelectedItemForReturn(productSelectedForReturned[0], results.response).then(function (responseValue) {
             if (responseValue == "success") {
-                session.send("Thanks for your response.");
+                session.send("I see. Thankyou for your response.");
                 setTimeout(function () {
                     session.beginDialog('/returnMethod');
                 }, 1000);
@@ -391,7 +391,7 @@ bot.dialog('/orderSizeInput', [
         Store.findOrderItems(orderData[counter].itemName, orderData[counter].itemColor, orderData[counter].itemSize).then(function (listOfItemsToOrder) {
             // args
             if (listOfItemsToOrder.length == 0) {
-                session.send('I did not find any product based on your search. How else can I help you?');
+                session.send('I\'m afraid I can\'t show you that today Alison. I suggest you think about ordering a new dress or a skirt, maybe even a top.');
                 reinitializeVariables();
                 session.endConversation();
 
