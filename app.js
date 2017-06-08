@@ -5,7 +5,6 @@ var spellService = require('./spell-service');
 var exec = require('child_process').exec;
 var http = require('http');
 var locationDialog = require('botbuilder-location');
-var child;
 //=========================================================
 // Dummy Data
 //=========================================================
@@ -41,7 +40,7 @@ var connector = new builder.ChatConnector({
 });
 server.post('/api/messages', connector.listen());
 var bot = new builder.UniversalBot(connector, function (session) {
-    session.send('I didn\'t get that. Can you say it again?');
+    session.send('Hmm, I’m not sure I understand, could you reword that please?');
 });
 bot.library(locationDialog.createLibrary('Ah38A8Y0TcjzjS0XnFRB1I9fTZqGO1m951rYUEPyw0OoTlXweMC4mFjj6I_aWamn'));
 // You can provide your own model by specifing the 'LUIS_MODEL_URL' environment variable
@@ -67,7 +66,6 @@ bot.recognizer(recognizer);
 //=========================================================
 // Bots Dialogs
 //=========================================================
-var selectedItem;
 // Add first run dialog
 bot.dialog('returnItem', [
     function (session, args, next) {
@@ -175,7 +173,7 @@ bot.dialog('returnItem', [
             for (var i in localItemsList) {
                 session.send('These are the products you bought on ' + localItemsList[i].date);
                 var message = new builder.Message().attachmentLayout(builder.AttachmentLayout.carousel).attachments(localItemsList[i].products.map(function (item) {
-                    return new builder.HeroCard(session).title(item.name).images([new builder.CardImage().url(item.image)]).buttons([builder.CardAction.openUrl(session, item.image, 'Enlarge Image'), builder.CardAction.postBack(session, ('You selected: ' + item.orderItemId + ',' + item.name), item.name)]);
+                    return new builder.HeroCard(session).title(item.name).images([new builder.CardImage().url(item.image)]).buttons([builder.CardAction.openUrl(session, item.image, 'Enlarge Image'), builder.CardAction.postBack(session, ('You selected: ' + item.orderItemId + ',' + item.name), 'Return ' + item.name)]);
                     // .builder.CardAction.postBack(session, item.name, itemAsAttachment.name)
                 }));
                 session.send(message);
@@ -223,6 +221,12 @@ bot.dialog('/returnReason', [
     onInterrupted: function (session) {
         session.send('Please select one of these...');
     }
+}).cancelAction('cancelAction', "You are out!", {
+    matches: /^Exit/i,
+    onSelectAction: function (session) {
+        reinitializeVariables()
+        session.endConversation("Seems like you want to abort the conversation. Thank you");
+    }
 });
 bot.dialog('/returnMethod', [
     function (session) {
@@ -232,27 +236,39 @@ bot.dialog('/returnMethod', [
     },
     function (session, results) {
         session.userData.returnMethod = results.response.entity;
-        session.send('Okay. The nearest ' + results.response.entity + ' to your delivery address is:');
-        var card = new builder.HeroCard(session)
-            .text('Broadway Post Office\n\n1 Broadway,\n\nWestminster,\n\nLondon SW1H 0AX')
-            .images([
+        if (results.response.entity != 'Drop at Post Office') {
+            session.send('This will be an option in future versions Alison, but for now please select Drop at Post Office.');
+            session.replaceDialog('/returnMethod');
+        } else {
+            session.send('Okay. The nearest ' + results.response.entity + ' to your delivery address is:');
+            var card = new builder.HeroCard(session)
+                .text('Broadway Post Office\n\n1 Broadway,\n\nWestminster,\n\nLondon SW1H 0AX')
+                .images([
             builder.CardImage.create(session, 'https://jdwiilliamsimages.blob.core.windows.net/jd-williams-images/images/Map.jpeg')
         ])
-            .buttons([
+                .buttons([
             builder.CardAction.openUrl(session, 'https://www.google.co.in/maps/dir/Holborn,+London,+UK/Broadway+Post+Office,+1+Broadway,+Westminster,+London+SW1H+0AX,+UK/@51.5075558,-0.1317768,15z/am=t/data=!4m14!4m13!1m5!1m1!1s0x48761b3576dabf03:0x2c0ed4d68c673fd!2m2!1d-0.1184757!2d51.5172619!1m5!1m1!1s0x487604dc0d972871:0xe20ac904e79dc033!2m2!1d-0.1339724!2d51.4984833!3e0', 'View Location')
         ]);
 
-        // attach the card to the reply message
-        var msg = new builder.Message(session).addAttachment(card);
-        session.send(msg);
+            // attach the card to the reply message
+            var msg = new builder.Message(session).addAttachment(card);
+            session.send(msg);
 
-        //        session.send('Broadway Post Office\n\n1 Broadway,\n\nWestminster,\n\nLondon SW1H 0AX');
-        setTimeout(function () {
-            session.beginDialog('/instructions');
-        }, 4000);
+            //        session.send('Broadway Post Office\n\n1 Broadway,\n\nWestminster,\n\nLondon SW1H 0AX');
+            setTimeout(function () {
+                session.beginDialog('/instructions');
+            }, 4000);
+        }
+
     }
 
-]);
+]).cancelAction('cancelAction', "You are out!", {
+    matches: /^Exit/i,
+    onSelectAction: function (session) {
+        reinitializeVariables()
+        session.endConversation("Seems like you want to abort the conversation. Thank you");
+    }
+});
 bot.dialog('/instructions', [
     function (session) {
         session.send('Return Instructions: Cut out Royal Mail return label from your Customer Advice Note and stick this on the original packaging.');
@@ -281,7 +297,13 @@ bot.dialog('/endReturn', [
         }
         session.endDialog();
     }
-]);
+]).cancelAction('cancelAction', "You are out!", {
+    matches: /^Exit/i,
+    onSelectAction: function (session) {
+        reinitializeVariables()
+        session.endConversation("Seems like you want to abort the conversation. Thank you");
+    }
+});
 //----------------------------------------------orderItem
 bot.dialog('orderItem', [
     function (session, args, next) {
@@ -337,12 +359,12 @@ bot.dialog('orderItem', [
     onInterrupted: function (session) {
         session.send('Please provide information');
     }
-}).cancelAction('cancelList', "Conversation canceled", {
-    matches: /^cancel/i,
-    confirmPrompt: "Are you sure?"
-}).reloadAction('reloadBuy', "Restarting order.", {
-    matches: /^start over/i,
-    confirmPrompt: "are you sure?"
+}).cancelAction('cancelAction', "You are out!", {
+    matches: /^Exit/i,
+    onSelectAction: function (session) {
+        reinitializeVariables()
+        session.endConversation("Seems like you want to abort the conversation. Thank you");
+    }
 });
 bot.dialog('/orderSizeInput', [
 
@@ -386,7 +408,13 @@ bot.dialog('/orderSizeInput', [
         });
     }
 
-]);
+]).cancelAction('cancelAction', "You are out!", {
+    matches: /^Exit/i,
+    onSelectAction: function (session) {
+        reinitializeVariables()
+        session.endConversation("Seems like you want to abort the conversation. Thank you");
+    }
+});
 bot.dialog('/afterItemSelected', [
     function (session, args) {
         productSelectedForOrder = args.intent.matched[0].replace('Added to Bag ', '').split(',');
@@ -420,6 +448,7 @@ bot.dialog('/afterItemOrdered', [
         /*session.userData.afterItemOrderedyesOrNo = results.response.entity;
 console.log("afterItemOrdered yes or no " + results.response.entity);*/
         //console.log(results.response.entity == 'No');
+        console.log("results.response-->" + JSON.stringify(results.response, null, 2));
         if (results.response.entity == 'No') {
             session.beginDialog('/deliveryType');
             //console.log("customer: " + itemsOrdered[0].customerId);
@@ -430,9 +459,12 @@ console.log("afterItemOrdered yes or no " + results.response.entity);*/
             //session.beginDialog('/orderSizeInput');
         }
         //session.endDialog();
-}]).cancelAction('cancelList', "Action canceled", {
-    matches: /^cancel/i,
-    confirmPrompt: "Are you sure?"
+}]).cancelAction('cancelAction', "You are out!", {
+    matches: /^Exit/i,
+    onSelectAction: function (session) {
+        reinitializeVariables()
+        session.endConversation("Seems like you want to abort the conversation. Thank you");
+    }
 });
 bot.dialog('/deliveryType', [
     function (session) {
@@ -449,7 +481,13 @@ bot.dialog('/deliveryType', [
         }
         //session.endDialog();
     }
-]);
+]).cancelAction('cancelAction', "You are out!", {
+    matches: /^Exit/i,
+    onSelectAction: function (session) {
+        reinitializeVariables()
+        session.endConversation("Seems like you want to abort the conversation. Thank you");
+    }
+});
 bot.dialog('/addPreference', [
     function (session) {
         builder.Prompts.choice(session, 'Would you like me to add that choice to your account preferences Alison?', ['Yes', 'No'], {
@@ -465,7 +503,13 @@ bot.dialog('/addPreference', [
         }
         //session.endDialog();
     }
-]);
+]).cancelAction('cancelAction', "You are out!", {
+    matches: /^Exit/i,
+    onSelectAction: function (session) {
+        reinitializeVariables()
+        session.endConversation("Seems like you want to abort the conversation. Thank you");
+    }
+});
 bot.dialog('/confirmUsingPreference', [
     function (session) {
         builder.Prompts.choice(session, 'Great. I will use your account preferences to complete this order. Is that okay?', ['Yes', 'No'], {
@@ -484,7 +528,13 @@ bot.dialog('/confirmUsingPreference', [
         }
         //session.endDialog();
     }
-]);
+]).cancelAction('cancelAction', "You are out!", {
+    matches: /^Exit/i,
+    onSelectAction: function (session) {
+        reinitializeVariables()
+        session.endConversation("Seems like you want to abort the conversation. Thank you");
+    }
+});
 bot.dialog('/confirmDelivery', [
     function (session) {
         var itemsNames = '';
@@ -521,7 +571,13 @@ bot.dialog('/confirmDelivery', [
         }
         session.endDialog();
     }
-]);
+]).cancelAction('cancelAction', "You are out!", {
+    matches: /^Exit/i,
+    onSelectAction: function (session) {
+        reinitializeVariables()
+        session.endConversation("Seems like you want to abort the conversation. Thank you");
+    }
+});
 bot.dialog('/endOrder', [
     function (session) {
         session.send('Your order will be with you soon Alison, I hope you like it. Thank you for shopping with us :)');
@@ -531,7 +587,8 @@ bot.dialog('/endOrder', [
 ]);
 bot.dialog('/endConversation', function (session) {
     reinitializeVariables();
-    session.endConversation("Seems like you want to abort the conversation. Thank you.");
+    console.log("Exit called");
+    session.endConversation("Seems like you want to abort the conversation. Thank you very much");
 }).triggerAction({
     matches: /Exit.*/i
 });
@@ -613,6 +670,5 @@ function reinitializeVariables() {
     productSelectedForOrder = [];
     productArraySelectedForOrder = [];
     itemsOrdered = [];
-    orderData = [];
-    counter = 0;
+
 }
