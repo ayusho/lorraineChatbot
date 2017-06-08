@@ -304,7 +304,7 @@ bot.dialog('/endReturn', [
         session.endConversation("Seems like you want to abort the conversation. Thank you");
     }
 });
-//----------------------------------------------orderItem
+//----------------------------------------------orderItem-------------------------------------------------------
 bot.dialog('orderItem', [
     function (session, args, next) {
         var items = '';
@@ -579,12 +579,15 @@ bot.dialog('/confirmDelivery', [
     }
 });
 bot.dialog('/endOrder', [
-    function (session) {
+    function (session, args, next) {
         session.send('Your order will be with you soon Alison, I hope you like it. Thank you for shopping with us :)');
         reinitializeVariables();
-        session.endConversation();
-    }
-]);
+        setTimeout(function () {
+            session.endConversation('If I can do anything else for you, please just message me.');
+        }, 2000);
+
+    }]);
+
 bot.dialog('/endConversation', function (session) {
     reinitializeVariables();
     console.log("Exit called");
@@ -598,6 +601,13 @@ bot.dialog('/greetings', [
     }
 ]).triggerAction({
     matches: 'greetings',
+});
+bot.dialog('/help', [
+    function (session) {
+        session.send('I am Lorraine, your personal chat assistant. I can help you purchase and return an item from JD Williams. What would you like me to do?');
+    }
+]).triggerAction({
+    matches: 'help',
 });
 //helper functions
 function getCustomerData() {
