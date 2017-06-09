@@ -597,14 +597,14 @@ bot.dialog('/endConversation', function (session) {
 });
 bot.dialog('/greetings', [
     function (session) {
-        session.send('Hey Alison, how may I help you?');
+        session.send('Hi Alison. I am Lorraine, your personal retail assistant. How can I help you today?');
     }
 ]).triggerAction({
     matches: 'greetings',
 });
 bot.dialog('/help', [
     function (session) {
-        session.send('I am Lorraine, your personal chat assistant. I can help you purchase and return an item from JD Williams. What would you like me to do?');
+        session.send('I am Lorraine, your personal retail assistant. I am happy to help you with your shopping today. Would you like to order or return an item Alison?');
     }
 ]).triggerAction({
     matches: 'help',
